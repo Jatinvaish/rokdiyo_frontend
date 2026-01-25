@@ -1,9 +1,9 @@
-  import { Calendar, CreditCard, DollarSign, Users, TrendingUp, ShoppingCart, CheckCircle, Clock, AlertCircle, Download, LucideIcon } from "lucide-react";
+  import { Calendar, CreditCard, Wallet, Users, TrendingUp, ShoppingCart, CheckCircle, Clock, AlertCircle, Download, LucideIcon } from "lucide-react";
   import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
   import CountAnimation from "@/components/ui/custom/count-animation";
 
   // EXPORT these types so other files can use them
-  export type IconName = "calendar" | "users" | "creditCard" | "dollarSign" | "trendingUp" | "shoppingCart" | "checkCircle" | "clock" | "alertCircle" | "download";
+  export type IconName = "calendar" | "users" | "creditCard" | "wallet" | "trendingUp" | "shoppingCart" | "checkCircle" | "clock" | "alertCircle" | "download";
 
   export type BgColorName = "indigo" | "green" | "purple" | "orange" | "blue" | "red" | "pink" | "yellow";
 
@@ -27,7 +27,7 @@
     calendar: Calendar,
     users: Users,
     creditCard: CreditCard,
-    dollarSign: DollarSign,
+    wallet: Wallet,
     trendingUp: TrendingUp,
     shoppingCart: ShoppingCart,
     checkCircle: CheckCircle,

@@ -51,11 +51,11 @@ export const mockRolePermissions: RolePermission[] = [
   // Super Admin - All permissions
   ...mockPermissions.map((p, i) => ({ id: `sa-${i}`, role_id: '1', permission_id: p.id, created_at: '2025-01-01T00:00:00Z' })),
   // Admin - Most permissions except delete
-  ...mockPermissions.filter(p => p.permission_key !== 'delete').map((p, i) => ({ id: `a-${i}`, role_id: '2', permission_id: p.id, created_at: '2025-01-01T00:00:00Z' })),
+  ...mockPermissions.filter(p => p.permission_key && p.permission_key !== 'delete').map((p, i) => ({ id: `a-${i}`, role_id: '2', permission_id: p.id, created_at: '2025-01-01T00:00:00Z' })),
   // Manager - View, list, read, update, export
-  ...mockPermissions.filter(p => ['view', 'list', 'read', 'update', 'export'].includes(p.permission_key)).map((p, i) => ({ id: `m-${i}`, role_id: '3', permission_id: p.id, created_at: '2025-01-01T00:00:00Z' })),
+  ...mockPermissions.filter(p => p.permission_key && ['view', 'list', 'read', 'update', 'export'].includes(p.permission_key)).map((p, i) => ({ id: `m-${i}`, role_id: '3', permission_id: p.id, created_at: '2025-01-01T00:00:00Z' })),
   // User - View, list, read only
-  ...mockPermissions.filter(p => ['view', 'list', 'read'].includes(p.permission_key)).map((p, i) => ({ id: `u-${i}`, role_id: '4', permission_id: p.id, created_at: '2025-01-01T00:00:00Z' })),
+  ...mockPermissions.filter(p => p.permission_key && ['view', 'list', 'read'].includes(p.permission_key)).map((p, i) => ({ id: `u-${i}`, role_id: '4', permission_id: p.id, created_at: '2025-01-01T00:00:00Z' })),
 ];
 
 export const mockMenuPermissions: MenuPermission[] = [

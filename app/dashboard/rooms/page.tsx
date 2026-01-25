@@ -7,7 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { roomApi, hotelApi } from '@/lib/api/hotel';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { roomService } from '@/lib/services/rooms.service';
+import { hotelService } from '@/lib/services/hotels.service';
 import { Room, RoomType, Hotel } from '@/lib/types/hotel';
 import { Plus, Bed, Settings } from 'lucide-react';
 
@@ -44,13 +52,13 @@ export default function RoomsPage() {
   const loadData = async () => {
     try {
       const [roomsData, typesData, hotelsData] = await Promise.all([
-        roomApi.list(),
-        roomApi.listTypes(),
-        hotelApi.list(),
+        roomService.list({}),
+        roomService.listTypes(),
+        hotelService.list(),
       ]);
-      setRooms(roomsData);
-      setRoomTypes(typesData);
-      setHotels(hotelsData);
+      setRooms(roomsData as any);
+      setRoomTypes(typesData as any);
+      setHotels(hotelsData as any);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -61,7 +69,7 @@ export default function RoomsPage() {
   const handleTypeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await roomApi.createType({
+      await roomService.createType({
         ...typeFormData,
         base_rate_hourly: parseFloat(typeFormData.base_rate_hourly),
         base_rate_daily: parseFloat(typeFormData.base_rate_daily),
@@ -86,7 +94,7 @@ export default function RoomsPage() {
   const handleRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await roomApi.bulkCreate({
+      await roomService.bulkCreate({
         hotel_id: parseInt(roomFormData.hotel_id),
         room_type_id: parseInt(roomFormData.room_type_id),
         room_number_prefix: roomFormData.room_number_prefix,
@@ -226,37 +234,33 @@ export default function RoomsPage() {
               <form onSubmit={handleRoomSubmit} className="space-y-3">
                 <div>
                   <Label htmlFor="hotel" className="text-xs">Hotel</Label>
-                  <select
-                    id="hotel"
-                    className="w-full h-8 px-2 border rounded text-sm"
-                    value={roomFormData.hotel_id}
-                    onChange={(e) => setRoomFormData({ ...roomFormData, hotel_id: e.target.value })}
-                    required
-                  >
-                    <option value="">Select hotel</option>
-                    {hotels.map((hotel) => (
-                      <option key={hotel.id} value={hotel.id}>
-                        {hotel.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={roomFormData.hotel_id} onValueChange={(value) => setRoomFormData({ ...roomFormData, hotel_id: value })}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Select hotel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hotels.map((hotel) => (
+                        <SelectItem key={hotel.id} value={hotel.id.toString()}>
+                          {hotel.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="roomType" className="text-xs">Room Type</Label>
-                  <select
-                    id="roomType"
-                    className="w-full h-8 px-2 border rounded text-sm"
-                    value={roomFormData.room_type_id}
-                    onChange={(e) => setRoomFormData({ ...roomFormData, room_type_id: e.target.value })}
-                    required
-                  >
-                    <option value="">Select type</option>
-                    {roomTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={roomFormData.room_type_id} onValueChange={(value) => setRoomFormData({ ...roomFormData, room_type_id: value })}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roomTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id.toString()}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>

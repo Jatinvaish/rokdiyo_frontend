@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { guestApi } from '@/lib/api/hotel';
+import { guestService } from '@/lib/services/guests.service';
 import { Guest } from '@/lib/types/hotel';
 import { Plus, User, Search, History } from 'lucide-react';
 
@@ -40,8 +40,8 @@ export default function GuestsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const guest = await guestApi.create(formData);
-      setGuests([...guests, guest]);
+      const guest = await guestService.create(formData);
+      setGuests([...guests, guest as any]);
       setDialogOpen(false);
       setFormData({
         first_name: '',
@@ -62,8 +62,8 @@ export default function GuestsPage() {
   const handleSearch = async () => {
     if (!searchEmail) return;
     try {
-      const results = await guestApi.search(searchEmail);
-      setSearchResults(Array.isArray(results) ? results : [results]);
+      const results = await guestService.search(searchEmail);
+      setSearchResults((Array.isArray(results) ? results : [results]) as any);
     } catch (error) {
       console.error('Failed to search guest:', error);
       setSearchResults([]);
@@ -72,8 +72,8 @@ export default function GuestsPage() {
 
   const handleViewHistory = async (guest: Guest) => {
     try {
-      const history = await guestApi.history(guest.id);
-      setGuestHistory(history);
+      const history = await guestService.getHistory(guest.id);
+      setGuestHistory(history as any);
       setSelectedGuest(guest);
       setHistoryDialogOpen(true);
     } catch (error) {

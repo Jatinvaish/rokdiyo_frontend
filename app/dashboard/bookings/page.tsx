@@ -7,7 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { bookingApi, guestApi, roomApi, hotelApi } from '@/lib/api/hotel';
+import { bookingService } from '@/lib/services/bookings.service';
+import { guestService } from '@/lib/services/guests.service';
+import { roomService } from '@/lib/services/rooms.service';
+import { hotelService } from '@/lib/services/hotels.service';
 import { Booking, Guest, Room, Hotel } from '@/lib/types/hotel';
 import { Plus, Calendar, User, CreditCard } from 'lucide-react';
 
@@ -55,13 +58,13 @@ export default function BookingsPage() {
   const loadData = async () => {
     try {
       const [bookingsData, roomsData, hotelsData] = await Promise.all([
-        bookingApi.list(),
-        roomApi.list(),
-        hotelApi.list(),
+        bookingService.list(),
+        roomService.list(),
+        hotelService.list(),
       ]);
-      setBookings(bookingsData);
-      setRooms(roomsData);
-      setHotels(hotelsData);
+      setBookings(bookingsData as any);
+      setRooms(roomsData as any);
+      setHotels(hotelsData as any);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -72,8 +75,8 @@ export default function BookingsPage() {
   const handleGuestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const guest = await guestApi.create(guestFormData);
-      setGuests([...guests, guest]);
+      const guest = await guestService.create(guestFormData);
+      setGuests([...guests, guest as any]);
       setGuestDialogOpen(false);
       setGuestFormData({
         first_name: '',
@@ -91,7 +94,7 @@ export default function BookingsPage() {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await bookingApi.create({
+      await bookingService.create({
         ...bookingFormData,
         guest_id: parseInt(bookingFormData.guest_id),
         hotel_id: parseInt(bookingFormData.hotel_id),
@@ -120,12 +123,10 @@ export default function BookingsPage() {
     if (!selectedBooking) return;
     
     try {
-      await bookingApi.recordPayment({
-        booking_id: selectedBooking.id,
-        amount: parseFloat(paymentFormData.amount),
-        payment_method: paymentFormData.payment_method,
-        reference_number: paymentFormData.reference_number,
-      });
+      await bookingService.recordPayment(
+        selectedBooking.id,
+        parseFloat(paymentFormData.amount)
+      );
       setPaymentDialogOpen(false);
       setPaymentFormData({
         amount: '',

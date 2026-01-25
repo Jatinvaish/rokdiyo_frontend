@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { hotelApi } from '@/lib/api/hotel';
+import { hotelService } from '@/lib/services/hotels.service';
 import { Hotel } from '@/lib/types/hotel';
 import { Plus, Building2, MapPin } from 'lucide-react';
 
@@ -17,11 +17,14 @@ export default function HotelsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
+    phone: '',
     address: '',
     city: '',
-    phone: '',
-    email: '',
-    parent_hotel_id: '',
+    state: '',
+    country: '',
+    zip_code: '',
+    website: '',
     is_headquarters: false,
   });
 
@@ -31,8 +34,8 @@ export default function HotelsPage() {
 
   const loadHotels = async () => {
     try {
-      const data = await hotelApi.list();
-      setHotels(data);
+      const data = await hotelService.list();
+      setHotels(data as any);
     } catch (error) {
       console.error('Failed to load hotels:', error);
     } finally {
@@ -43,18 +46,18 @@ export default function HotelsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await hotelApi.create({
-        ...formData,
-        parent_hotel_id: formData.parent_hotel_id ? parseInt(formData.parent_hotel_id) : undefined,
-      });
+      await hotelService.create(formData);
       setDialogOpen(false);
       setFormData({
         name: '',
+        email: '',
+        phone: '',
         address: '',
         city: '',
-        phone: '',
-        email: '',
-        parent_hotel_id: '',
+        state: '',
+        country: '',
+        zip_code: '',
+        website: '',
         is_headquarters: false,
       });
       loadHotels();
@@ -141,24 +144,6 @@ export default function HotelsPage() {
                   />
                 </div>
               </div>
-              {headquarters.length > 0 && (
-                <div>
-                  <Label htmlFor="parent" className="text-xs">Parent Hotel</Label>
-                  <select
-                    id="parent"
-                    className="w-full h-8 px-2 border rounded text-sm"
-                    value={formData.parent_hotel_id}
-                    onChange={(e) => setFormData({ ...formData, parent_hotel_id: e.target.value })}
-                  >
-                    <option value="">Select parent</option>
-                    {headquarters.map((hotel) => (
-                      <option key={hotel.id} value={hotel.id}>
-                        {hotel.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"

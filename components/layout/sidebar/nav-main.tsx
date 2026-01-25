@@ -19,11 +19,13 @@ import {
   CalendarIcon,
   GaugeIcon,
   ChevronRight,
+  Shield,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePathname } from "next/navigation";
+import { useAuthStore } from "@/lib/store/auth.store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,13 +63,26 @@ export const navItems: NavGroup[] = [
   },
 ];
 
+export const adminNavItems: NavGroup[] = [
+  {
+    title: "Super Admin",
+    items: [
+      { title: "Tenant Management", href: "/dashboard/admin/tenants", icon: Shield },
+    ],
+  },
+];
+
 export function NavMain() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.userType === "SUPER_ADMIN";
+
+  const itemsToShow = [...navItems, ...(isSuperAdmin ? adminNavItems : [])];
 
   return (
     <>
-      {navItems.map((nav) => (
+      {itemsToShow.map((nav) => (
         <SidebarGroup key={nav.title}>
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>

@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export interface Hotel {
   id: number;
   name: string;
@@ -9,6 +11,21 @@ export interface Hotel {
   is_headquarters: boolean;
   branch_count?: number;
 }
+
+export const createHotelSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().min(10, 'Phone must be at least 10 characters'),
+  address: z.string().min(5, 'Address must be at least 5 characters'),
+  city: z.string().min(2, 'City must be at least 2 characters'),
+  state: z.string().min(2, 'State must be at least 2 characters').optional().or(z.literal('')),
+  country: z.string().min(2, 'Country must be at least 2 characters'),
+  zip_code: z.string().min(3, 'Zip code must be at least 3 characters').optional().or(z.literal('')),
+  website: z.string().url('Invalid website URL').optional().or(z.literal('')),
+  is_headquarters: z.boolean().optional(),
+});
+
+export type CreateHotelFormData = z.infer<typeof createHotelSchema>;
 
 export interface RoomType {
   id: number;
