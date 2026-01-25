@@ -13,18 +13,12 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 import {
-  Accessibility,
-  ActivityIcon,
-  BadgeDollarSignIcon,
   Building2Icon,
-  ChartBarDecreasingIcon,
-  ChartPieIcon,
-  ChevronRight,
-  DockIcon,
+  BedIcon,
+  UsersIcon,
+  CalendarIcon,
   GaugeIcon,
-  ShieldCheckIcon,
-  ShoppingBagIcon,
-  WalletMinimalIcon,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -56,30 +50,13 @@ type NavItem = {
 
 export const navItems: NavGroup[] = [
   {
-    title: "",
+    title: "Hotel Management",
     items: [
-      { title: "Governance Dashboard", href: "/governance", icon: ChartBarDecreasingIcon },
-      {
-        title: "Analytics",
-        href: "#",
-        icon: ShoppingBagIcon,
-        items: [
-          { title: "Bias Radar", href: "/bias-radar" },
-        ]
-      },
-
-      //todo
-      // {
-      //   title: "Access Management",
-      //   href: "#",
-      //   icon: ShieldCheckIcon,
-      //   items: [
-      //     { title: "Roles", href: "/access-controll/roles" },
-      //     { title: "Menu Permission", href: "/access-controll/menu-permission" },
-      //     { title: "Permission", href: "/access-controll/permission" },
-      //     { title: "Role Permission", href: "/access-controll/role-permissions" },
-      //   ]
-      // },
+      { title: "Dashboard", href: "/dashboard", icon: GaugeIcon },
+      { title: "Hotels & Branches", href: "/dashboard/hotels", icon: Building2Icon },
+      { title: "Rooms", href: "/dashboard/rooms", icon: BedIcon },
+      { title: "Guests", href: "/dashboard/guests", icon: UsersIcon },
+      { title: "Bookings", href: "/dashboard/bookings", icon: CalendarIcon },
     ],
   },
 ];
