@@ -37,11 +37,11 @@ export function ActiveThemeProvider({
     setThemeCookie("theme_radius", theme.radius);
     body.setAttribute("data-theme-radius", theme.radius);
 
-    if (theme.radius != "default") {
-      setThemeCookie("theme_preset", theme.radius);
+    if (theme.radius !== "md") {
+      setThemeCookie("theme_radius", theme.radius);
       body.setAttribute("data-theme-radius", theme.radius);
     } else {
-      setThemeCookie("theme_preset", null);
+      setThemeCookie("theme_radius", null);
       body.removeAttribute("data-theme-radius");
     }
 
@@ -56,13 +56,8 @@ export function ActiveThemeProvider({
     setThemeCookie("theme_content_layout", theme.contentLayout);
     body.setAttribute("data-theme-content-layout", theme.contentLayout);
 
-    if (theme.scale != "none") {
-      setThemeCookie("theme_scale", theme.scale);
-      body.setAttribute("data-theme-scale", theme.scale);
-    } else {
-      setThemeCookie("theme_scale", null);
-      body.removeAttribute("data-theme-scale");
-    }
+    setThemeCookie("theme_scale", theme.scale);
+    body.setAttribute("data-theme-scale", theme.scale);
   }, [theme.preset, theme.radius, theme.scale, theme.contentLayout]);
 
   return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;

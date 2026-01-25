@@ -81,13 +81,28 @@ export const authService = {
     }
   },
 
-  logout() {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
-      
-      // Clear cookie
-      document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  async logout() {
+    try {
+      // Call backend logout endpoint if token exists
+      const token = this.getToken();
+      if (token) {
+        await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, {});
+      }
+    } catch (error) {
+      console.error("Backend logout failed:", error);
+      // Continue with client-side cleanup even if backend call fails
+    } finally {
+      // Always clear client-side data
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user");
+        
+        // Clear cookie
+        document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        
+        // Redirect to sign-in
+        window.location.href = "/sign-in";
+      }
     }
   },
 

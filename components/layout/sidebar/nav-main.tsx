@@ -59,43 +59,27 @@ export const navItems: NavGroup[] = [
     title: "",
     items: [
       { title: "Governance Dashboard", href: "/governance", icon: ChartBarDecreasingIcon },
-      { title: "Clinical Validation", href: "/clinical-validation", icon: BadgeDollarSignIcon },
-      { title: "Applied Model Card ", href: "/applied-modal-card", icon: BadgeDollarSignIcon },
-      { title: "Continuous monitoring", href: "/continuous-monitoring", icon: BadgeDollarSignIcon },
       {
         title: "Analytics",
         href: "#",
         icon: ShoppingBagIcon,
         items: [
-          { title: "AI On /Off Analysis", href: "/on-off-analytics" },
-          { title: "Validation Runs", href: "/validation-run" },
-          { title: "Version comparator", href: "/version-compatitor", icon: ChartBarDecreasingIcon },
-          { title: "Human & AI", href: "/human-ai" },
           { title: "Bias Radar", href: "/bias-radar" },
         ]
       },
-      { title: "Sentinel Events", href: "/sentinal-events", icon: BadgeDollarSignIcon },
-      { title: "Policy Threshold", href: "/policy-threshold", icon: DockIcon },
-      {
-        title: "Setting",
-        href: "#",
-        icon: ActivityIcon,
-        items: [
-          { title: "Account Setting", href: "/account" },
-          { title: "Safety Alert Notification", href: "/alert-notification" },
-        ]
-      },
-      {
-        title: "Access Management",
-        href: "#",
-        icon: ShieldCheckIcon,
-        items: [
-          { title: "Roles", href: "/access-controll/roles" },
-          { title: "Menu Permission", href: "/access-controll/menu-permission" },
-          { title: "Permission", href: "/access-controll/permission" },
-          { title: "Role Permission", href: "/access-controll/role-permissions" },
-        ]
-      },
+
+      //todo
+      // {
+      //   title: "Access Management",
+      //   href: "#",
+      //   icon: ShieldCheckIcon,
+      //   items: [
+      //     { title: "Roles", href: "/access-controll/roles" },
+      //     { title: "Menu Permission", href: "/access-controll/menu-permission" },
+      //     { title: "Permission", href: "/access-controll/permission" },
+      //     { title: "Role Permission", href: "/access-controll/role-permissions" },
+      //   ]
+      // },
     ],
   },
 ];

@@ -1,6 +1,5 @@
 'use client';
 import { BadgeCheck, Bell, LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -11,36 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { toast } from "@/hooks/use-toast";
+import { authService } from "@/lib/services/auth.service";
 
 export default function UserMenu() {
-  const router = useRouter();
-
-  const handleLogout = () => {
-    try {
-      // Clear user data from localStorage
-      localStorage.removeItem('user');
-      
-      // Clear authentication cookie by setting it to expire immediately
-      document.cookie = 'auth-token=; path=/; max-age=0; SameSite=Lax';
-      
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out",
-        variant: "default",
-      });
-      
-      // Redirect to sign-in page
-      router.push('/sign-in');
-      router.refresh();
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred during logout",
-        variant: "destructive",
-      });
-    }
+  const handleLogout = async () => {
+    await authService.logout();
   };
 
   return (
