@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { AddGuestModal } from '@/components/forms/add-guest-modal';
 import { guestService } from '@/lib/services/guests.service';
 import { Guest } from '@/lib/types/hotel';
 import { Plus, User, Search, History } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 export default function GuestsPage() {
   const [guests, setGuests] = useState<Guest[]>([]);
@@ -21,41 +22,19 @@ export default function GuestsPage() {
   const [guestHistory, setGuestHistory] = useState<any[]>([]);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    id_type: 'passport',
-    id_number: '',
-    date_of_birth: '',
-    nationality: '',
-    address: '',
-  });
-
   useEffect(() => {
-    setLoading(false);
+    loadGuests();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const loadGuests = async () => {
     try {
-      const guest = await guestService.create(formData);
-      setGuests([...guests, guest as any]);
-      setDialogOpen(false);
-      setFormData({
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-        id_type: 'passport',
-        id_number: '',
-        date_of_birth: '',
-        nationality: '',
-        address: '',
-      });
+      const data = await guestService.list();
+      setGuests(data as any);
     } catch (error) {
-      console.error('Failed to create guest:', error);
+      console.error('Failed to load guests:', error);
+      toast.error('Failed to load guests');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -78,6 +57,7 @@ export default function GuestsPage() {
       setHistoryDialogOpen(true);
     } catch (error) {
       console.error('Failed to load guest history:', error);
+      toast.error('Failed to load guest history');
     }
   };
 
@@ -89,122 +69,10 @@ export default function GuestsPage() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Guests</h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              Add
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-base">Create Guest</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor="firstName" className="text-xs">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    className="h-8 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lastName" className="text-xs">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    className="h-8 text-sm"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor="email" className="text-xs">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="h-8 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone" className="text-xs">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="h-8 text-sm"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor="idType" className="text-xs">ID Type</Label>
-                  <select
-                    id="idType"
-                    className="w-full h-8 px-2 border rounded text-sm"
-                    value={formData.id_type}
-                    onChange={(e) => setFormData({ ...formData, id_type: e.target.value })}
-                  >
-                    <option value="passport">Passport</option>
-                    <option value="license">License</option>
-                    <option value="national_id">National ID</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="idNumber" className="text-xs">ID Number</Label>
-                  <Input
-                    id="idNumber"
-                    value={formData.id_number}
-                    onChange={(e) => setFormData({ ...formData, id_number: e.target.value })}
-                    className="h-8 text-sm"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor="dob" className="text-xs">Date of Birth</Label>
-                  <Input
-                    id="dob"
-                    type="date"
-                    value={formData.date_of_birth}
-                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="nationality" className="text-xs">Nationality</Label>
-                  <Input
-                    id="nationality"
-                    value={formData.nationality}
-                    onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                    className="h-8 text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="address" className="text-xs">Address</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="h-8 text-sm"
-                />
-              </div>
-              <Button type="submit" className="w-full h-8 text-sm">Create</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" />
+          Add Guest
+        </Button>
       </div>
 
       <Card>
@@ -225,7 +93,7 @@ export default function GuestsPage() {
             />
             <Button onClick={handleSearch} size="sm">Search</Button>
           </div>
-          
+
           {searchResults.length > 0 && (
             <div className="mt-3 space-y-2">
               {searchResults.map((guest) => (
@@ -260,7 +128,7 @@ export default function GuestsPage() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center">
             <User className="h-4 w-4 mr-1" />
-            Recent Guests
+            All Guests ({guests.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
@@ -268,7 +136,11 @@ export default function GuestsPage() {
             <div className="text-center py-6">
               <User className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm font-medium mb-1">No guests found</p>
-              <p className="text-xs text-muted-foreground mb-3">Search or create guests</p>
+              <p className="text-xs text-muted-foreground mb-3">Add your first guest</p>
+              <Button onClick={() => setDialogOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Guest
+              </Button>
             </div>
           ) : (
             <div className="space-y-2">
@@ -300,6 +172,7 @@ export default function GuestsPage() {
         </CardContent>
       </Card>
 
+      {/* Guest History Dialog */}
       <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -320,12 +193,12 @@ export default function GuestsPage() {
                         Room {booking.room_number} - {booking.room_type_name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(booking.check_in_date).toLocaleDateString()} - 
+                        {new Date(booking.check_in_date).toLocaleDateString()} -
                         {new Date(booking.check_out_date).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium text-sm">${booking.total_amount}</div>
+                      <div className="font-medium text-sm">₹{booking.total_amount}</div>
                       <Badge variant="outline" className="text-xs">{booking.status}</Badge>
                     </div>
                   </div>
@@ -335,6 +208,13 @@ export default function GuestsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Guest Modal */}
+      <AddGuestModal
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={loadGuests}
+      />
     </div>
   );
 }

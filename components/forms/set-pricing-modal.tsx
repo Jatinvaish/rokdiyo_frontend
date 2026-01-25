@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { z } from 'zod';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -15,26 +23,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import { z } from 'zod';
 
-const setPricingSchema = z.object({
-  room_type: z.enum(['single', 'double', 'suite', 'deluxe', 'penthouse']).refine(
-    val => val,
-    { message: 'Please select a room type' }
-  ),
-  base_price: z.string().min(1, 'Base price is required'),
-  weekend_price: z.string().optional(),
-  holiday_price: z.string().optional(),
-  seasonal_multiplier: z.string().optional(),
+const pricingSchema = z.object({
+  room_type: z.enum(['single', 'double', 'suite', 'deluxe', 'penthouse']),
+  base_price: z.coerce.number().min(1, 'Base price is required'),
+  weekend_price: z.coerce.number().optional(),
+  holiday_price: z.coerce.number().optional(),
+  seasonal_multiplier: z.coerce.number().optional(),
 });
 
-type SetPricingFormData = z.infer<typeof setPricingSchema>;
+type PricingFormData = z.infer<typeof pricingSchema>;
 
 interface SetPricingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  initialData?: any;
 }
 
 const ROOM_TYPES = [
@@ -45,31 +49,56 @@ const ROOM_TYPES = [
   { value: 'penthouse', label: 'Penthouse' },
 ];
 
-export function SetPricingModal({ open, onOpenChange, onSuccess }: SetPricingModalProps) {
+export function SetPricingModal({ open, onOpenChange, onSuccess, initialData }: SetPricingModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = !!initialData;
 
-  const form = useForm<SetPricingFormData>({
-    resolver: zodResolver(setPricingSchema),
+  const form = useForm<PricingFormData>({
+    resolver: zodResolver(pricingSchema),
     defaultValues: {
       room_type: 'double',
-      base_price: '5000',
-      weekend_price: '6500',
-      holiday_price: '7500',
-      seasonal_multiplier: '1',
+      base_price: 5000,
+      weekend_price: 6500,
+      holiday_price: 7500,
+      seasonal_multiplier: 1,
     },
   });
 
-  const onSubmit = async (data: SetPricingFormData) => {
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        room_type: initialData.room_type || 'double',
+        base_price: initialData.base_price || 5000,
+        weekend_price: initialData.weekend_price || 6500,
+        holiday_price: initialData.holiday_price || 7500,
+        seasonal_multiplier: initialData.seasonal_multiplier || 1,
+      });
+    } else {
+      form.reset({
+        room_type: 'double',
+        base_price: 5000,
+        weekend_price: 6500,
+        holiday_price: 7500,
+        seasonal_multiplier: 1,
+      });
+    }
+  }, [initialData, form]);
+
+  const onSubmit = async (data: PricingFormData) => {
     setIsSubmitting(true);
     try {
       // TODO: Replace with actual API call
-      // await pricingApi.set(data);
-      toast.success('Pricing set successfully');
+      // if (isEditMode) {
+      //   await pricingApi.update(initialData.id, data);
+      // } else {
+      //   await pricingApi.create(data);
+      // }
+      toast.success(`Pricing ${isEditMode ? 'updated' : 'set'} successfully`);
       form.reset();
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to set pricing');
+      toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'set'} pricing`);
     } finally {
       setIsSubmitting(false);
     }
@@ -77,150 +106,104 @@ export function SetPricingModal({ open, onOpenChange, onSuccess }: SetPricingMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-base">Set Room Pricing</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[500px]">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <DialogHeader>
+            <DialogTitle>{isEditMode ? 'Edit Room Pricing' : 'Set Room Pricing'}</DialogTitle>
+            <DialogDescription>
+              {isEditMode ? 'Update pricing configuration' : 'Configure pricing rates for different periods'}
+            </DialogDescription>
+          </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
-            {/* Room Type, Base Price, Weekend, Holiday (4 columns) */}
-            <div className="grid grid-cols-4 gap-2">
-              <FormField
-                control={form.control}
-                name="room_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Room Type</FormLabel>
-                    <FormControl>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="h-8 text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ROOM_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="base_price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Base (₹)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="5000"
-                        type="number"
-                        step="100"
-                        {...field}
-                        className="h-8 text-sm"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="weekend_price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Weekend (₹)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="6500"
-                        type="number"
-                        step="100"
-                        {...field}
-                        className="h-8 text-sm"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="holiday_price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Holiday (₹)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="7500"
-                        type="number"
-                        step="100"
-                        {...field}
-                        className="h-8 text-sm"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Seasonal Multiplier (4 columns - 1 used) */}
-            <div className="grid grid-cols-4 gap-2">
-              <FormField
-                control={form.control}
-                name="seasonal_multiplier"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Multiplier</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="1.2"
-                        type="number"
-                        step="0.1"
-                        min="0.5"
-                        max="3"
-                        {...field}
-                        className="h-8 text-sm"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Submit Buttons */}
-            <div className="flex gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="h-8 text-xs flex-1"
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="room_type">Room Type *</Label>
+              <Select
+                value={form.watch('room_type')}
+                onValueChange={(value: any) => form.setValue('room_type', value)}
               >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="h-8 text-xs flex-1"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Pricing'
-                )}
-              </Button>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROOM_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.formState.errors.room_type && (
+                <p className="text-sm text-destructive">{form.formState.errors.room_type.message}</p>
+              )}
             </div>
-          </form>
-        </Form>
+
+            <div className="space-y-2">
+              <Label htmlFor="base_price">Base Price (₹) *</Label>
+              <Input
+                id="base_price"
+                type="number"
+                step="100"
+                placeholder="5000"
+                {...form.register('base_price')}
+              />
+              {form.formState.errors.base_price && (
+                <p className="text-sm text-destructive">{form.formState.errors.base_price.message}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="weekend_price">Weekend Price (₹)</Label>
+                <Input
+                  id="weekend_price"
+                  type="number"
+                  step="100"
+                  placeholder="6500"
+                  {...form.register('weekend_price')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="holiday_price">Holiday Price (₹)</Label>
+                <Input
+                  id="holiday_price"
+                  type="number"
+                  step="100"
+                  placeholder="7500"
+                  {...form.register('holiday_price')}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="seasonal_multiplier">Seasonal Multiplier</Label>
+              <Input
+                id="seasonal_multiplier"
+                type="number"
+                step="0.1"
+                min="0.5"
+                max="3"
+                placeholder="1.2"
+                {...form.register('seasonal_multiplier')}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : (isEditMode ? 'Update Pricing' : 'Save Pricing')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -1,18 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import { roomService } from '@/lib/services/rooms.service';
 
-const createRoomTypeSchema = z.object({
+const roomTypeSchema = z.object({
   name: z.string().min(2, 'Room type name must be at least 2 characters'),
   description: z.string().min(5, 'Description must be at least 5 characters'),
   base_rate_hourly: z.coerce.number().min(0, 'Hourly rate must be at least 0'),
@@ -21,19 +28,21 @@ const createRoomTypeSchema = z.object({
   amenities: z.string().optional(),
 });
 
-type CreateRoomTypeFormData = z.infer<typeof createRoomTypeSchema>;
+type RoomTypeFormData = z.infer<typeof roomTypeSchema>;
 
 interface AddRoomTypeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  initialData?: any;
 }
 
-export function AddRoomTypeModal({ open, onOpenChange, onSuccess }: AddRoomTypeModalProps) {
+export function AddRoomTypeModal({ open, onOpenChange, onSuccess, initialData }: AddRoomTypeModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = !!initialData;
 
-  const form = useForm<CreateRoomTypeFormData>({
-    resolver: zodResolver(createRoomTypeSchema),
+  const form = useForm<RoomTypeFormData>({
+    resolver: zodResolver(roomTypeSchema),
     defaultValues: {
       name: '',
       description: '',
@@ -44,16 +53,43 @@ export function AddRoomTypeModal({ open, onOpenChange, onSuccess }: AddRoomTypeM
     },
   });
 
-  const onSubmit = async (data: CreateRoomTypeFormData) => {
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        name: initialData.name || '',
+        description: initialData.description || '',
+        base_rate_hourly: initialData.base_rate_hourly || 0,
+        base_rate_daily: initialData.base_rate_daily || 0,
+        max_occupancy: initialData.max_occupancy || 2,
+        amenities: initialData.amenities || '',
+      });
+    } else {
+      form.reset({
+        name: '',
+        description: '',
+        base_rate_hourly: 0,
+        base_rate_daily: 0,
+        max_occupancy: 2,
+        amenities: '',
+      });
+    }
+  }, [initialData, form]);
+
+  const onSubmit = async (data: RoomTypeFormData) => {
     setIsSubmitting(true);
     try {
-      await roomService.createType(data);
-      toast.success('Room type created successfully');
+      if (isEditMode) {
+        await roomService.updateType(initialData.id, data);
+        toast.success('Room type updated successfully');
+      } else {
+        await roomService.createType(data);
+        toast.success('Room type created successfully');
+      }
       form.reset();
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create room type');
+      toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'create'} room type`);
     } finally {
       setIsSubmitting(false);
     }
@@ -61,116 +97,108 @@ export function AddRoomTypeModal({ open, onOpenChange, onSuccess }: AddRoomTypeM
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-base">Create New Room Type</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[500px]">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <DialogHeader>
+            <DialogTitle>{isEditMode ? 'Edit Room Type' : 'Create New Room Type'}</DialogTitle>
+            <DialogDescription>
+              {isEditMode ? 'Update room type details' : 'Define a new room type with pricing and amenities'}
+            </DialogDescription>
+          </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
-            {/* Row 1: Name, Description, Max Occupancy (3 columns) */}
-            <div className="grid grid-cols-3 gap-2">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Room Type</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Deluxe" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Room Type Name *</Label>
+              <Input
+                id="name"
+                placeholder="e.g., Deluxe, Suite, Standard"
+                {...form.register('name')}
               />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Room description" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="max_occupancy"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Max Occupancy</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="2" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+              {form.formState.errors.name && (
+                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+              )}
             </div>
 
-            {/* Row 2: Hourly Rate, Daily Rate, Amenities (3 columns) */}
-            <div className="grid grid-cols-3 gap-2">
-              <FormField
-                control={form.control}
-                name="base_rate_hourly"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Hourly Rate</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="500" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe the room type features"
+                rows={3}
+                {...form.register('description')}
               />
-              <FormField
-                control={form.control}
-                name="base_rate_daily"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Daily Rate</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="2000" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="amenities"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Amenities</FormLabel>
-                    <FormControl>
-                      <Input placeholder="WiFi, AC, TV" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+              {form.formState.errors.description && (
+                <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
+              )}
             </div>
 
-            {/* Submit Button */}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" size="sm" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Create Room Type
-              </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="base_rate_hourly">Hourly Rate (₹) *</Label>
+                <Input
+                  id="base_rate_hourly"
+                  type="number"
+                  placeholder="500"
+                  {...form.register('base_rate_hourly')}
+                />
+                {form.formState.errors.base_rate_hourly && (
+                  <p className="text-sm text-destructive">{form.formState.errors.base_rate_hourly.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="base_rate_daily">Daily Rate (₹) *</Label>
+                <Input
+                  id="base_rate_daily"
+                  type="number"
+                  placeholder="2000"
+                  {...form.register('base_rate_daily')}
+                />
+                {form.formState.errors.base_rate_daily && (
+                  <p className="text-sm text-destructive">{form.formState.errors.base_rate_daily.message}</p>
+                )}
+              </div>
             </div>
-          </form>
-        </Form>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="max_occupancy">Max Occupancy *</Label>
+                <Input
+                  id="max_occupancy"
+                  type="number"
+                  placeholder="2"
+                  {...form.register('max_occupancy')}
+                />
+                {form.formState.errors.max_occupancy && (
+                  <p className="text-sm text-destructive">{form.formState.errors.max_occupancy.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="amenities">Amenities</Label>
+                <Input
+                  id="amenities"
+                  placeholder="e.g., WiFi, AC, TV"
+                  {...form.register('amenities')}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Room Type' : 'Create Room Type')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

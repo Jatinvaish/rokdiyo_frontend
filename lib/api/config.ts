@@ -27,7 +27,7 @@ export const API_ENDPOINTS = {
     INVITATION_ACCEPT: (token: string) => `/auth/invitation/accept/${token}`,
     INVITATION_REJECT: (token: string) => `/auth/invitation/reject/${token}`,
   },
-  
+
   // Hotel Management
   HOTELS: {
     CREATE: "/hotels/create",
@@ -37,26 +37,30 @@ export const API_ENDPOINTS = {
     DELETE: (id: number) => `/hotels/delete/${id}`,
     BRANCHES: (id: number) => `/hotels/branches/${id}`,
   },
-  
+
   // Room Management
   ROOMS: {
-    CREATE_TYPE: "/room-types/create",
-    LIST_TYPES: "/room-types/list",
+    CREATE: "/rooms/create",
+    CREATE_TYPE: "/rooms/room-types/create",
+    LIST_TYPES: "/rooms/room-types/list",
+    UPDATE_TYPE: "/rooms/room-types/update",
     LIST: "/rooms/list",
     BULK_CREATE: "/rooms/bulk-create",
     GET: (id: number) => `/rooms/get/${id}`,
+    UPDATE: "/rooms/update",
     UPDATE_STATUS: "/rooms/update-status",
   },
-  
+
   // Guest Management
   GUESTS: {
     CREATE: "/guests/create",
     LIST: "/guests/list",
     GET: (id: number) => `/guests/get/${id}`,
+    UPDATE: "/guests/update",
     SEARCH: "/guests/search",
     HISTORY: (id: number) => `/guests/history/${id}`,
   },
-  
+
   // Booking Management
   BOOKINGS: {
     CHECK_AVAILABILITY: "/bookings/check-availability",
@@ -65,21 +69,21 @@ export const API_ENDPOINTS = {
     GET: (id: number) => `/bookings/get/${id}`,
     RECORD_PAYMENT: "/bookings/payment/record",
   },
-  
+
   // Check-in/Check-out
   CHECKIN: {
     COMPLETE: "/checkin/complete",
     CALCULATE_BILL: "/checkout/calculate-bill",
     COMPLETE_CHECKOUT: "/checkout/complete",
   },
-  
+
   // Pricing
   PRICING: {
     CREATE_HOURLY_RULE: "/pricing/hourly-rules/create",
     CREATE_SEASONAL_RATE: "/pricing/seasonal-rates/create",
     CALCULATE_PRICE: "/pricing/calculate",
   },
-  
+
   // Dashboard
   DASHBOARD: {
     OVERVIEW: "/dashboard/overview",
@@ -87,7 +91,7 @@ export const API_ENDPOINTS = {
     ROOMS_GRID: "/dashboard/rooms-grid",
     BRANCH_COMPARISON: "/dashboard/branch-comparison",
   },
-  
+
   // Health Check
   HEALTH: {
     CHECK: "/health",

@@ -121,4 +121,17 @@ export const guestService = {
       throw new Error(error.message || "Failed to get guest history");
     }
   },
+
+  async update(id: number, data: Partial<CreateGuestDto>): Promise<Guest> {
+    try {
+      const response = await apiClient.post<GuestResponse>(
+        API_ENDPOINTS.GUESTS.UPDATE,
+        { id, ...data }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Update guest failed:", error);
+      throw new Error(error.message || "Failed to update guest");
+    }
+  },
 };

@@ -133,4 +133,43 @@ export const roomService = {
       throw new Error(error.message || "Failed to update room status");
     }
   },
+
+  async create(data: any): Promise<Room> {
+    try {
+      const response = await apiClient.post(
+        API_ENDPOINTS.ROOMS.CREATE,
+        data
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Create room failed:", error);
+      throw new Error(error.message || "Failed to create room");
+    }
+  },
+
+  async update(roomId: number, data: any): Promise<Room> {
+    try {
+      const response = await apiClient.post(
+        API_ENDPOINTS.ROOMS.UPDATE,
+        { id: roomId, ...data }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Update room failed:", error);
+      throw new Error(error.message || "Failed to update room");
+    }
+  },
+
+  async updateType(typeId: number, data: CreateRoomTypeDto): Promise<RoomType> {
+    try {
+      const response = await apiClient.post(
+        API_ENDPOINTS.ROOMS.UPDATE_TYPE,
+        { id: typeId, ...data }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Update room type failed:", error);
+      throw new Error(error.message || "Failed to update room type");
+    }
+  },
 };

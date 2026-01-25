@@ -1,26 +1,34 @@
 'use client';
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { PasswordInput, PhoneInput, WebsiteInput, TimezoneSelect, CurrencySelect } from '@/components/ui/custom-inputs';
 import { createTenantSchema, CreateTenantFormData } from '@/lib/types/tenant';
 import { tenantService } from '@/lib/services/tenant.service';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
 
 interface AddTenantModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  initialData?: any;
 }
 
-export function AddTenantModal({ open, onOpenChange, onSuccess }: AddTenantModalProps) {
+export function AddTenantModal({ open, onOpenChange, onSuccess, initialData }: AddTenantModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = !!initialData;
 
   const form = useForm<CreateTenantFormData>({
     resolver: zodResolver(createTenantSchema),
@@ -41,16 +49,60 @@ export function AddTenantModal({ open, onOpenChange, onSuccess }: AddTenantModal
     },
   });
 
+  useEffect(() => {
+    if (initialData) {
+      // In edit mode, admin fields are optional/disabled
+      form.reset({
+        name: initialData.name || '',
+        email: initialData.email || '',
+        phone: initialData.phone || '',
+        address: initialData.address || '',
+        city: initialData.city || 'Ahmedabad',
+        country: initialData.country || 'India',
+        timezone: initialData.timezone || 'IST (Asia/Kolkata)',
+        currency: initialData.currency || 'INR',
+        website: initialData.website || '',
+        admin_name: '',
+        admin_email: '',
+        admin_password: '',
+        confirm_password: '',
+      });
+    } else {
+      form.reset({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: 'Ahmedabad',
+        country: 'India',
+        timezone: 'IST (Asia/Kolkata)',
+        currency: 'INR',
+        website: '',
+        admin_name: '',
+        admin_email: '',
+        admin_password: '',
+        confirm_password: '',
+      });
+    }
+  }, [initialData, form]);
+
   const onSubmit = async (data: CreateTenantFormData) => {
     setIsSubmitting(true);
     try {
-      await tenantService.createTenant(data);
-      toast.success('Tenant created successfully');
+      if (isEditMode) {
+        // For edit mode, only update tenant info without admin fields
+        const { admin_name, admin_email, admin_password, confirm_password, ...tenantData } = data;
+        await tenantService.updateTenant(initialData.id, tenantData);
+        toast.success('Tenant updated successfully');
+      } else {
+        await tenantService.createTenant(data);
+        toast.success('Tenant created successfully');
+      }
       form.reset();
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create tenant');
+      toast.error(error.message || `Failed to ${isEditMode ? 'update' : 'create'} tenant`);
     } finally {
       setIsSubmitting(false);
     }
@@ -58,225 +110,185 @@ export function AddTenantModal({ open, onOpenChange, onSuccess }: AddTenantModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-base">Create New Tenant</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <DialogHeader>
+            <DialogTitle>{isEditMode ? 'Edit Tenant' : 'Create New Tenant'}</DialogTitle>
+            <DialogDescription>
+              {isEditMode ? 'Update tenant information' : 'Create a new tenant with admin account'}
+            </DialogDescription>
+          </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
-            {/* Row 1: Name, Email, Phone, City (4 columns) */}
-            <div className="grid grid-cols-4 gap-2">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Hotel Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Grand Hotel" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Hotel/Company Name *</Label>
+              <Input
+                id="name"
+                placeholder="Grand Hotel"
+                {...form.register('name')}
               />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="hotel@email.com" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Phone</FormLabel>
-                    <FormControl>
-                      <PhoneInput {...field} />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">City</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ahmedabad" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+              {form.formState.errors.name && (
+                <p className="text-sm text-destructive">{form.formState.errors.name.message as string}</p>
+              )}
             </div>
 
-            {/* Row 2: Address, Country, Timezone, Currency (4 columns) */}
-            <div className="grid grid-cols-4 gap-2">
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Street address" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="hotel@email.com"
+                  {...form.register('email')}
+                />
+                {form.formState.errors.email && (
+                  <p className="text-sm text-destructive">{form.formState.errors.email.message as string}</p>
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Country</FormLabel>
-                    <FormControl>
-                      <Input placeholder="India" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone *</Label>
+                <PhoneInput {...form.register('phone')} />
+                {form.formState.errors.phone && (
+                  <p className="text-sm text-destructive">{form.formState.errors.phone.message as string}</p>
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="timezone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Timezone</FormLabel>
-                    <FormControl>
-                      <TimezoneSelect value={field.value} onValueChange={field.onChange} />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Currency</FormLabel>
-                    <FormControl>
-                      <CurrencySelect value={field.value} onValueChange={field.onChange} />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+              </div>
             </div>
 
-            {/* Row 3: Admin Name, Email, Password, Confirm (4 columns) */}
-            <div className="grid grid-cols-4 gap-2">
-              <FormField
-                control={form.control}
-                name="admin_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Admin Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Admin name" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
+            <div className="space-y-2">
+              <Label htmlFor="address">Address *</Label>
+              <Input
+                id="address"
+                placeholder="Street address"
+                {...form.register('address')}
               />
-              <FormField
-                control={form.control}
-                name="admin_email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Admin Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="admin@hotel.com" {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="admin_password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Password</FormLabel>
-                    <FormControl>
-                      <PasswordInput {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirm_password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Confirm Password</FormLabel>
-                    <FormControl>
-                      <PasswordInput {...field} className="h-8 text-sm" />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+              {form.formState.errors.address && (
+                <p className="text-sm text-destructive">{form.formState.errors.address.message as string}</p>
+              )}
             </div>
 
-            {/* Row 4: Website (optional, 4 columns - 2 used) */}
-            <div className="grid grid-cols-4 gap-2">
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel className="text-xs">Website (Optional)</FormLabel>
-                    <FormControl>
-                      <WebsiteInput {...field} />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City *</Label>
+                <Input
+                  id="city"
+                  placeholder="Ahmedabad"
+                  {...form.register('city')}
+                />
+                {form.formState.errors.city && (
+                  <p className="text-sm text-destructive">{form.formState.errors.city.message as string}</p>
                 )}
-              />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">Country *</Label>
+                <Input
+                  id="country"
+                  placeholder="India"
+                  {...form.register('country')}
+                />
+                {form.formState.errors.country && (
+                  <p className="text-sm text-destructive">{form.formState.errors.country.message as string}</p>
+                )}
+              </div>
             </div>
 
-            {/* Submit Buttons */}
-            <div className="flex gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="h-8 text-xs flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="h-8 text-xs flex-1"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Tenant'
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="timezone">Timezone *</Label>
+                <TimezoneSelect
+                  value={form.watch('timezone')}
+                  onValueChange={(value) => form.setValue('timezone', value)}
+                />
+                {form.formState.errors.timezone && (
+                  <p className="text-sm text-destructive">{form.formState.errors.timezone.message as string}</p>
                 )}
-              </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency *</Label>
+                <CurrencySelect
+                  value={form.watch('currency')}
+                  onValueChange={(value) => form.setValue('currency', value)}
+                />
+                {form.formState.errors.currency && (
+                  <p className="text-sm text-destructive">{form.formState.errors.currency.message as string}</p>
+                )}
+              </div>
             </div>
-          </form>
-        </Form>
+
+            <div className="space-y-2">
+              <Label htmlFor="website">Website (Optional)</Label>
+              <WebsiteInput {...form.register('website')} />
+            </div>
+
+            {!isEditMode && (
+              <>
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-sm font-medium mb-3">Admin Account</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="admin_name">Admin Name *</Label>
+                      <Input
+                        id="admin_name"
+                        placeholder="Admin name"
+                        {...form.register('admin_name')}
+                      />
+                      {form.formState.errors.admin_name && (
+                        <p className="text-sm text-destructive">{form.formState.errors.admin_name.message as string}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="admin_email">Admin Email *</Label>
+                      <Input
+                        id="admin_email"
+                        type="email"
+                        placeholder="admin@hotel.com"
+                        {...form.register('admin_email')}
+                      />
+                      {form.formState.errors.admin_email && (
+                        <p className="text-sm text-destructive">{form.formState.errors.admin_email.message as string}</p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="admin_password">Password *</Label>
+                        <PasswordInput {...form.register('admin_password')} />
+                        {form.formState.errors.admin_password && (
+                          <p className="text-sm text-destructive">{form.formState.errors.admin_password.message as string}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm_password">Confirm Password *</Label>
+                        <PasswordInput {...form.register('confirm_password')} />
+                        {form.formState.errors.confirm_password && (
+                          <p className="text-sm text-destructive">{form.formState.errors.confirm_password.message as string}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Tenant' : 'Create Tenant')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
