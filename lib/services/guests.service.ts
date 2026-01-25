@@ -1,6 +1,6 @@
-// lib/services/guests.service.ts
 import { apiClient } from "../api/client";
 import { API_ENDPOINTS } from "../api/config";
+import { ApiResponse, Guest, PaginatedResponse } from "../types/hotel";
 
 export interface CreateGuestDto {
   first_name: string;
@@ -15,51 +15,10 @@ export interface CreateGuestDto {
   address?: string;
 }
 
-export interface Guest {
-  id: number;
-  tenantId: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  idType: string;
-  idNumber: string;
-  idDocumentUrl?: string;
-  dateOfBirth?: string;
-  nationality?: string;
-  address?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface GuestsListResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: Guest[];
-  timestamp: string;
-}
-
-export interface GuestResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: Guest;
-  timestamp: string;
-}
-
-export interface GuestHistoryResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: any[];
-  timestamp: string;
-}
-
 export const guestService = {
   async create(data: CreateGuestDto): Promise<Guest> {
     try {
-      const response = await apiClient.post<GuestResponse>(
+      const response = await apiClient.post<ApiResponse<Guest>>(
         API_ENDPOINTS.GUESTS.CREATE,
         data
       );
@@ -70,11 +29,15 @@ export const guestService = {
     }
   },
 
-  async list(): Promise<Guest[]> {
+  async list(filters?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<PaginatedResponse<Guest>> {
     try {
-      const response = await apiClient.post<GuestsListResponse>(
+      const response = await apiClient.post<ApiResponse<PaginatedResponse<Guest>>>(
         API_ENDPOINTS.GUESTS.LIST,
-        {}
+        filters || {}
       );
       return response.data;
     } catch (error: any) {
@@ -85,7 +48,7 @@ export const guestService = {
 
   async get(id: number): Promise<Guest> {
     try {
-      const response = await apiClient.post<GuestResponse>(
+      const response = await apiClient.post<ApiResponse<Guest>>(
         API_ENDPOINTS.GUESTS.GET(id),
         {}
       );
@@ -98,7 +61,7 @@ export const guestService = {
 
   async search(email: string): Promise<Guest | null> {
     try {
-      const response = await apiClient.post<GuestResponse>(
+      const response = await apiClient.post<ApiResponse<Guest>>(
         API_ENDPOINTS.GUESTS.SEARCH,
         { email }
       );
@@ -111,7 +74,7 @@ export const guestService = {
 
   async getHistory(guestId: number): Promise<any[]> {
     try {
-      const response = await apiClient.post<GuestHistoryResponse>(
+      const response = await apiClient.post<ApiResponse<any[]>>(
         API_ENDPOINTS.GUESTS.HISTORY(guestId),
         {}
       );
@@ -124,7 +87,7 @@ export const guestService = {
 
   async update(id: number, data: Partial<CreateGuestDto>): Promise<Guest> {
     try {
-      const response = await apiClient.post<GuestResponse>(
+      const response = await apiClient.post<ApiResponse<Guest>>(
         API_ENDPOINTS.GUESTS.UPDATE,
         { id, ...data }
       );

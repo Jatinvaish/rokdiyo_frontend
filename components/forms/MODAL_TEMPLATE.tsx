@@ -21,17 +21,12 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { PhoneInput, WebsiteInput, PasswordInput } from '@/components/ui/custom-inputs';
+import { Combobox } from '@/components/ui/custom/combobox';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
@@ -85,7 +80,7 @@ export function ExampleModal({ open, onOpenChange, onSuccess }: ExampleModalProp
     try {
       // TODO: Replace with actual API call
       // const result = await exampleApi.create(data);
-      
+
       toast.success('Item created successfully');
       form.reset();
       onOpenChange(false);
@@ -163,18 +158,19 @@ export function ExampleModal({ open, onOpenChange, onSuccess }: ExampleModalProp
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">Category</FormLabel>
+                  <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Category</FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="h-8 text-sm">
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="type1">Type 1</SelectItem>
-                        <SelectItem value="type2">Type 2</SelectItem>
-                        <SelectItem value="type3">Type 3</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      options={[
+                        { value: 'type1', label: 'Type 1' },
+                        { value: 'type2', label: 'Type 2' },
+                        { value: 'type3', label: 'Type 3' },
+                      ]}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select a category"
+                      searchPlaceholder="Search category..."
+                    />
                   </FormControl>
                   <FormMessage className="text-xs" />
                 </FormItem>

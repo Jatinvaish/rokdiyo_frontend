@@ -1,6 +1,6 @@
-// lib/services/rooms.service.ts
 import { apiClient } from "../api/client";
 import { API_ENDPOINTS } from "../api/config";
+import { ApiResponse, Room, PaginatedResponse, RoomType } from "../types/hotel";
 
 export interface CreateRoomTypeDto {
   name: string;
@@ -9,19 +9,6 @@ export interface CreateRoomTypeDto {
   base_rate_daily: number;
   max_occupancy: number;
   amenities?: string[];
-}
-
-export interface RoomType {
-  id: number;
-  tenantId: number;
-  name: string;
-  description?: string;
-  base_rate_hourly: number;
-  base_rate_daily: number;
-  max_occupancy: number;
-  amenities: string[];
-  created_at: string;
-  updated_at: string;
 }
 
 export interface CreateRoomDto {
@@ -33,38 +20,10 @@ export interface CreateRoomDto {
   description?: string;
 }
 
-export interface Room {
-  id: number;
-  tenantId: number;
-  hotelId: number;
-  roomNumber: string;
-  roomTypeId: number;
-  floor: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RoomsListResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: Room[];
-  timestamp: string;
-}
-
-export interface RoomTypesListResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: RoomType[];
-  timestamp: string;
-}
-
 export const roomService = {
   async createType(data: CreateRoomTypeDto): Promise<RoomType> {
     try {
-      const response = await apiClient.post<{ success: boolean; statusCode: number; message: string; data: RoomType; timestamp: string }>(
+      const response = await apiClient.post<ApiResponse<RoomType>>(
         API_ENDPOINTS.ROOMS.CREATE_TYPE,
         data
       );
@@ -77,7 +36,7 @@ export const roomService = {
 
   async listTypes(): Promise<RoomType[]> {
     try {
-      const response = await apiClient.post<RoomTypesListResponse>(
+      const response = await apiClient.post<ApiResponse<RoomType[]>>(
         API_ENDPOINTS.ROOMS.LIST_TYPES,
         {}
       );
@@ -88,9 +47,16 @@ export const roomService = {
     }
   },
 
-  async list(filters?: any): Promise<Room[]> {
+  async list(filters?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    firm_id?: number;
+    branch_id?: number;
+    search?: string;
+  }): Promise<PaginatedResponse<Room>> {
     try {
-      const response = await apiClient.post<RoomsListResponse>(
+      const response = await apiClient.post<ApiResponse<PaginatedResponse<Room>>>(
         API_ENDPOINTS.ROOMS.LIST,
         filters || {}
       );
@@ -110,7 +76,7 @@ export const roomService = {
     floor: string;
   }): Promise<{ created_count: number; rooms: Room[] }> {
     try {
-      const response = await apiClient.post(
+      const response = await apiClient.post<ApiResponse<{ created_count: number; rooms: Room[] }>>(
         API_ENDPOINTS.ROOMS.BULK_CREATE,
         data
       );
@@ -123,7 +89,7 @@ export const roomService = {
 
   async updateStatus(roomId: number, status: string): Promise<Room> {
     try {
-      const response = await apiClient.post(
+      const response = await apiClient.post<ApiResponse<Room>>(
         API_ENDPOINTS.ROOMS.UPDATE_STATUS,
         { room_id: roomId, status }
       );
@@ -136,7 +102,7 @@ export const roomService = {
 
   async create(data: any): Promise<Room> {
     try {
-      const response = await apiClient.post(
+      const response = await apiClient.post<ApiResponse<Room>>(
         API_ENDPOINTS.ROOMS.CREATE,
         data
       );
@@ -149,7 +115,7 @@ export const roomService = {
 
   async update(roomId: number, data: any): Promise<Room> {
     try {
-      const response = await apiClient.post(
+      const response = await apiClient.post<ApiResponse<Room>>(
         API_ENDPOINTS.ROOMS.UPDATE,
         { id: roomId, ...data }
       );
@@ -162,7 +128,7 @@ export const roomService = {
 
   async updateType(typeId: number, data: CreateRoomTypeDto): Promise<RoomType> {
     try {
-      const response = await apiClient.post(
+      const response = await apiClient.post<ApiResponse<RoomType>>(
         API_ENDPOINTS.ROOMS.UPDATE_TYPE,
         { id: typeId, ...data }
       );

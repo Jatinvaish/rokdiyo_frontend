@@ -15,16 +15,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { PhoneInput, WebsiteInput } from '@/components/ui/custom-inputs';
 import { toast } from 'sonner';
 import { hotelService } from '@/lib/services/hotels.service';
+import { Combobox } from '@/components/ui/custom/combobox';
 
 const hotelSchema = z.object({
   name: z.string().min(2, 'Hotel name must be at least 2 characters'),
@@ -118,6 +112,14 @@ export function AddHotelModal({ open, onOpenChange, onSuccess, initialData }: Ad
     }
   };
 
+  const countryOptions = [
+    { value: 'India', label: 'India' },
+    { value: 'United States', label: 'United States' },
+    { value: 'United Kingdom', label: 'United Kingdom' },
+    { value: 'Canada', label: 'Canada' },
+    { value: 'Australia', label: 'Australia' }
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -206,21 +208,13 @@ export function AddHotelModal({ open, onOpenChange, onSuccess, initialData }: Ad
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="country">Country *</Label>
-                <Select
+                <Combobox
+                  options={countryOptions}
                   value={form.watch('country')}
-                  onValueChange={(value) => form.setValue('country', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="India">India</SelectItem>
-                    <SelectItem value="United States">United States</SelectItem>
-                    <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                    <SelectItem value="Canada">Canada</SelectItem>
-                    <SelectItem value="Australia">Australia</SelectItem>
-                  </SelectContent>
-                </Select>
+                  onChange={(val) => form.setValue('country', val)}
+                  placeholder="Select country"
+                  searchPlaceholder="Search country..."
+                />
                 {form.formState.errors.country && (
                   <p className="text-sm text-destructive">{form.formState.errors.country.message}</p>
                 )}

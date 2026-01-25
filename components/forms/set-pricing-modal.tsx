@@ -15,14 +15,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { toast } from 'sonner';
+import { Combobox } from '@/components/ui/custom/combobox';
 
 const pricingSchema = z.object({
   room_type: z.enum(['single', 'double', 'suite', 'deluxe', 'penthouse']),
@@ -118,21 +112,13 @@ export function SetPricingModal({ open, onOpenChange, onSuccess, initialData }: 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="room_type">Room Type *</Label>
-              <Select
+              <Combobox
+                options={ROOM_TYPES}
                 value={form.watch('room_type')}
-                onValueChange={(value: any) => form.setValue('room_type', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROOM_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(val: any) => form.setValue('room_type', val)}
+                placeholder="Select room type"
+                searchPlaceholder="Search type..."
+              />
               {form.formState.errors.room_type && (
                 <p className="text-sm text-destructive">{form.formState.errors.room_type.message}</p>
               )}

@@ -15,16 +15,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { PhoneInput } from '@/components/ui/custom-inputs';
 import { toast } from 'sonner';
 import { guestService } from '@/lib/services/guests.service';
+import { Combobox } from '@/components/ui/custom/combobox';
 
 const guestSchema = z.object({
   first_name: z.string().min(2, 'First name must be at least 2 characters'),
@@ -103,6 +97,13 @@ export function AddGuestModal({ open, onOpenChange, onSuccess, initialData }: Ad
     }
   };
 
+  const idTypeOptions = [
+    { value: 'passport', label: 'Passport' },
+    { value: 'driving_license', label: 'Driving License' },
+    { value: 'national_id', label: 'National ID' },
+    { value: 'visa', label: 'Visa' }
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -165,20 +166,13 @@ export function AddGuestModal({ open, onOpenChange, onSuccess, initialData }: Ad
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="id_type">ID Type *</Label>
-                <Select
-                  onValueChange={(value) => form.setValue('id_type', value)}
-                  defaultValue={form.watch('id_type')}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select ID type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="passport">Passport</SelectItem>
-                    <SelectItem value="driving_license">Driving License</SelectItem>
-                    <SelectItem value="national_id">National ID</SelectItem>
-                    <SelectItem value="visa">Visa</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={idTypeOptions}
+                  value={form.watch('id_type')}
+                  onChange={(val) => form.setValue('id_type', val)}
+                  placeholder="Select ID type"
+                  searchPlaceholder="Search type..."
+                />
                 {form.formState.errors.id_type && (
                   <p className="text-sm text-destructive">{form.formState.errors.id_type.message}</p>
                 )}

@@ -15,15 +15,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { roomService } from '@/lib/services/rooms.service';
+import { Combobox } from '@/components/ui/custom/combobox';
 
 const roomSchema = z.object({
   room_number: z.string().min(1, 'Room number is required'),
@@ -104,6 +98,19 @@ export function AddRoomModal({ hotelId, open, onOpenChange, onSuccess, initialDa
     }
   };
 
+  const roomTypeOptions = roomTypes.map((type: any) => ({
+    value: type.id?.toString() || "0",
+    label: type.type_name || type.name || 'Unknown Type'
+  }));
+
+  const statusOptions = [
+    { value: 'available', label: 'Available' },
+    { value: 'occupied', label: 'Occupied' },
+    { value: 'cleaning', label: 'Cleaning' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'advance', label: 'Advance Booking' }
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -145,26 +152,14 @@ export function AddRoomModal({ hotelId, open, onOpenChange, onSuccess, initialDa
 
             <div className="space-y-2">
               <Label htmlFor="room_type_id">Room Type *</Label>
-              <Select
-                value={form.watch('room_type_id')?.toString()}
-                onValueChange={(value) => form.setValue('room_type_id', parseInt(value))}
-                disabled={!roomTypes || roomTypes.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={roomTypes && roomTypes.length > 0 ? "Select room type" : "No room types found"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {roomTypes && roomTypes.length > 0 ? (
-                    roomTypes.map((type: any) => (
-                      <SelectItem key={type.id?.toString() || Math.random().toString()} value={type.id?.toString() || "0"}>
-                        {type.type_name || type.name || 'Unknown Type'}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="0" disabled>No room types available</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <Combobox
+                options={roomTypeOptions}
+                value={form.watch('room_type_id')?.toString() || ''}
+                onChange={(val) => form.setValue('room_type_id', parseInt(val) || 0)}
+                placeholder="Select room type"
+                searchPlaceholder="Search type..."
+                emptyText="No room types found. Add one first."
+              />
               {form.formState.errors.room_type_id && (
                 <p className="text-sm text-destructive">{form.formState.errors.room_type_id.message}</p>
               )}
@@ -172,21 +167,13 @@ export function AddRoomModal({ hotelId, open, onOpenChange, onSuccess, initialDa
 
             <div className="space-y-2">
               <Label htmlFor="status">Status *</Label>
-              <Select
+              <Combobox
+                options={statusOptions}
                 value={form.watch('status')}
-                onValueChange={(value: any) => form.setValue('status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="occupied">Occupied</SelectItem>
-                  <SelectItem value="cleaning">Cleaning</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="advance">Advance Booking</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(val: any) => form.setValue('status', val)}
+                placeholder="Select status"
+                searchPlaceholder="Search status..."
+              />
               {form.formState.errors.status && (
                 <p className="text-sm text-destructive">{form.formState.errors.status.message}</p>
               )}

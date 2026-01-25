@@ -1,6 +1,6 @@
-// lib/services/bookings.service.ts
 import { apiClient } from "../api/client";
 import { API_ENDPOINTS } from "../api/config";
+import { ApiResponse, Booking, PaginatedResponse, AvailableRoom } from "../types/hotel";
 
 export interface CheckAvailabilityDto {
   room_type_id: number;
@@ -10,68 +10,28 @@ export interface CheckAvailabilityDto {
 }
 
 export interface CreateBookingDto {
-  guest_id: number;
+  guest_id?: number;
+  guest?: any;
   hotel_id: number;
   room_id: number;
-  check_in_date: string;
-  check_out_date: string;
+  check_in_date?: string; // Legacy support
+  check_out_date?: string; // Legacy support
+  check_in?: string;
+  check_out?: string;
+  total_hours?: number;
+  total_nights?: number;
+  adults: number;
+  children?: number;
   total_amount: number;
   booking_type?: string;
   special_requests?: string;
   booking_source?: string;
 }
 
-export interface AvailableRoom {
-  id: number;
-  room_number: string;
-  hotel_id: number;
-  hotel_name: string;
-  room_type_name: string;
-}
-
-export interface Booking {
-  id: number;
-  tenantId: number;
-  guestId: number;
-  hotelId: number;
-  roomId: number;
-  checkInDate: string;
-  checkOutDate: string;
-  totalAmount: number;
-  bookingType: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AvailabilityResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: AvailableRoom[];
-  timestamp: string;
-}
-
-export interface BookingsListResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: Booking[];
-  timestamp: string;
-}
-
-export interface BookingResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: Booking;
-  timestamp: string;
-}
-
 export const bookingService = {
   async checkAvailability(data: CheckAvailabilityDto): Promise<AvailableRoom[]> {
     try {
-      const response = await apiClient.post<AvailabilityResponse>(
+      const response = await apiClient.post<ApiResponse<AvailableRoom[]>>(
         API_ENDPOINTS.BOOKINGS.CHECK_AVAILABILITY,
         data
       );
@@ -84,7 +44,7 @@ export const bookingService = {
 
   async create(data: CreateBookingDto): Promise<Booking> {
     try {
-      const response = await apiClient.post<BookingResponse>(
+      const response = await apiClient.post<ApiResponse<Booking>>(
         API_ENDPOINTS.BOOKINGS.CREATE,
         data
       );
@@ -95,9 +55,17 @@ export const bookingService = {
     }
   },
 
-  async list(filters?: any): Promise<Booking[]> {
+  async list(filters?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    firm_id?: number;
+    fromDate?: string;
+    toDate?: string;
+    search?: string;
+  }): Promise<PaginatedResponse<Booking>> {
     try {
-      const response = await apiClient.post<BookingsListResponse>(
+      const response = await apiClient.post<ApiResponse<PaginatedResponse<Booking>>>(
         API_ENDPOINTS.BOOKINGS.LIST,
         filters || {}
       );
@@ -110,7 +78,7 @@ export const bookingService = {
 
   async get(id: number): Promise<Booking> {
     try {
-      const response = await apiClient.post<BookingResponse>(
+      const response = await apiClient.post<ApiResponse<Booking>>(
         API_ENDPOINTS.BOOKINGS.GET(id),
         {}
       );
@@ -121,11 +89,16 @@ export const bookingService = {
     }
   },
 
-  async recordPayment(bookingId: number, amount: number): Promise<any> {
+  async recordPayment(bookingId: number, amount: number, method: string = 'cash', reference: string = ''): Promise<any> {
     try {
-      const response = await apiClient.post(
+      const response = await apiClient.post<ApiResponse<any>>(
         API_ENDPOINTS.BOOKINGS.RECORD_PAYMENT,
-        { booking_id: bookingId, amount, payment_method: 'cash', reference_number: '' }
+        {
+          booking_id: bookingId,
+          amount,
+          payment_method: method,
+          reference_number: reference
+        }
       );
       return response.data;
     } catch (error: any) {

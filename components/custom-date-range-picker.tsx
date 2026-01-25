@@ -41,23 +41,22 @@ const dateFilterPresets = [
   { name: "This Year", value: "thisYear" }
 ];
 
-export default function CalendarDateRangePicker({
-  className
-}: React.HTMLAttributes<HTMLDivElement>) {
-  const isMobile = useIsMobile();
-  const today = new Date();
-  const twentyEightDaysAgo = startOfDay(subDays(today, 27));
+interface CustomDateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
+  date?: DateRange;
+  onDateChange?: (date: DateRange | undefined) => void;
+}
 
-  // Initialize with "Last 28 days" as default
-  const [date, setDate] = React.useState<DateRange | undefined>({
-    from: twentyEightDaysAgo,
-    to: endOfDay(today)
-  });
+export function CustomDateRangePicker({
+  className,
+  date,
+  onDateChange
+}: CustomDateRangePickerProps) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(false);
   const [currentMonth, setCurrentMonth] = React.useState<Date>(new Date());
 
   const handleQuickSelect = (from: Date, to: Date) => {
-    setDate({ from, to });
+    onDateChange?.({ from, to });
     setCurrentMonth(from);
   };
 
@@ -196,7 +195,7 @@ export default function CalendarDateRangePicker({
               month={currentMonth}
               selected={date}
               onSelect={(newDate) => {
-                setDate(newDate);
+                onDateChange?.(newDate);
                 if (newDate?.from) {
                   setCurrentMonth(newDate.from);
                 }

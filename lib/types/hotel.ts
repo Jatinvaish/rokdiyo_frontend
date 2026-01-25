@@ -39,37 +39,55 @@ export interface RoomType {
 
 export interface Room {
   id: number;
-  hotel_id: number;
-  room_type_id: number;
+  tenantId: number;
+  hotelId: number;
   room_number: string;
+  roomTypeId: number;
   floor: string;
-  status: 'available' | 'booked' | 'occupied' | 'dirty' | 'maintenance';
+  status: string;
   room_type_name?: string;
   hotel_name?: string;
+  firm_name?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Guest {
   id: number;
+  tenantId: number;
   first_name: string;
   last_name: string;
   email: string;
   phone: string;
   id_type: string;
   id_number: string;
+  address?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Booking {
   id: number;
+  booking_code: string;
   guest_id: number;
   hotel_id: number;
-  room_id: number;
-  check_in_date: string;
-  check_out_date: string;
-  total_amount: number;
-  status: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
-  guest_name?: string;
+  assigned_to: number;
   room_number?: string;
   hotel_name?: string;
+  firm_name?: string;
+  guest_name?: string;
+  first_name?: string;
+  last_name?: string;
+  check_in: string;
+  check_out: string;
+  total_hours?: number;
+  total_nights?: number;
+  total_amount: number;
+  paid_amount: number;
+  booking_status: string;
+  payment_status: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface DashboardStats {
@@ -80,4 +98,30 @@ export interface DashboardStats {
   todays_checkins: number;
   todays_checkouts: number;
   todays_revenue: number;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: T;
+  timestamp: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface AvailableRoom {
+  id: number;
+  room_number: string;
+  hotel_id: number;
+  hotel_name: string;
+  room_type_name: string;
 }

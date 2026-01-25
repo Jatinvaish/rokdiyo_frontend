@@ -3,16 +3,16 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { bookingService } from '@/lib/services/bookings.service';
-import { guestService } from '@/lib/services/guests.service';
 import { roomService } from '@/lib/services/rooms.service';
+import { guestService } from '@/lib/services/guests.service';
 import { hotelService } from '@/lib/services/hotels.service';
 import { Booking, Guest, Room, Hotel } from '@/lib/types/hotel';
-import { Plus, Calendar, User, CreditCard } from 'lucide-react';
+import { Plus, Calendar, User, CreditCard, RefreshCw } from 'lucide-react';
+import { AddGuestModal } from '@/components/forms/add-guest-modal';
+import { CreateBookingModal } from '@/components/forms/create-booking-modal';
+import { RecordPaymentModal } from '@/components/forms/record-payment-modal';
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -25,46 +25,23 @@ export default function BookingsPage() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-  const [guestFormData, setGuestFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    id_type: 'passport',
-    id_number: '',
-  });
-
-  const [bookingFormData, setBookingFormData] = useState({
-    guest_id: '',
-    hotel_id: '',
-    room_id: '',
-    check_in_date: '',
-    check_out_date: '',
-    total_amount: '',
-    booking_type: 'daily',
-    special_requests: '',
-  });
-
-  const [paymentFormData, setPaymentFormData] = useState({
-    amount: '',
-    payment_method: 'cash',
-    reference_number: '',
-  });
-
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
+    setLoading(true);
     try {
-      const [bookingsData, roomsData, hotelsData] = await Promise.all([
+      const [bookingsData, roomsData, hotelsData, guestsData] = await Promise.all([
         bookingService.list(),
         roomService.list(),
         hotelService.list(),
+        guestService.list()
       ]);
-      setBookings(bookingsData as any);
-      setRooms(roomsData as any);
+      setBookings(bookingsData?.data || []);
+      setRooms(roomsData?.data || []);
       setHotels(hotelsData as any);
+      setGuests(guestsData?.data || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -72,387 +49,136 @@ export default function BookingsPage() {
     }
   };
 
-  const handleGuestSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const guest = await guestService.create(guestFormData);
-      setGuests([...guests, guest as any]);
-      setGuestDialogOpen(false);
-      setGuestFormData({
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-        id_type: 'passport',
-        id_number: '',
-      });
-    } catch (error) {
-      console.error('Failed to create guest:', error);
-    }
-  };
-
-  const handleBookingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await bookingService.create({
-        ...bookingFormData,
-        guest_id: parseInt(bookingFormData.guest_id),
-        hotel_id: parseInt(bookingFormData.hotel_id),
-        room_id: parseInt(bookingFormData.room_id),
-        total_amount: parseFloat(bookingFormData.total_amount),
-      });
-      setBookingDialogOpen(false);
-      setBookingFormData({
-        guest_id: '',
-        hotel_id: '',
-        room_id: '',
-        check_in_date: '',
-        check_out_date: '',
-        total_amount: '',
-        booking_type: 'daily',
-        special_requests: '',
-      });
-      loadData();
-    } catch (error) {
-      console.error('Failed to create booking:', error);
-    }
-  };
-
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedBooking) return;
-    
-    try {
-      await bookingService.recordPayment(
-        selectedBooking.id,
-        parseFloat(paymentFormData.amount)
-      );
-      setPaymentDialogOpen(false);
-      setPaymentFormData({
-        amount: '',
-        payment_method: 'cash',
-        reference_number: '',
-      });
-      loadData();
-    } catch (error) {
-      console.error('Failed to record payment:', error);
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-blue-100 text-blue-800';
-      case 'checked_in': return 'bg-green-100 text-green-800';
-      case 'checked_out': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'checked_in': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
+      case 'checked_out': return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300';
+      case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  if (loading) {
-    return <div className="p-6">Loading...</div>;
-  }
-
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Bookings Management</h1>
-        <div className="flex space-x-2">
-          <Dialog open={guestDialogOpen} onOpenChange={setGuestDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <User className="h-4 w-4 mr-2" />
-                Add Guest
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Guest</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleGuestSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={guestFormData.first_name}
-                      onChange={(e) => setGuestFormData({ ...guestFormData, first_name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={guestFormData.last_name}
-                      onChange={(e) => setGuestFormData({ ...guestFormData, last_name: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={guestFormData.email}
-                      onChange={(e) => setGuestFormData({ ...guestFormData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={guestFormData.phone}
-                      onChange={(e) => setGuestFormData({ ...guestFormData, phone: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="idType">ID Type</Label>
-                    <select
-                      id="idType"
-                      className="w-full p-2 border rounded-md"
-                      value={guestFormData.id_type}
-                      onChange={(e) => setGuestFormData({ ...guestFormData, id_type: e.target.value })}
-                    >
-                      <option value="passport">Passport</option>
-                      <option value="license">Driver's License</option>
-                      <option value="national_id">National ID</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="idNumber">ID Number</Label>
-                    <Input
-                      id="idNumber"
-                      value={guestFormData.id_number}
-                      onChange={(e) => setGuestFormData({ ...guestFormData, id_number: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                <Button type="submit" className="w-full">Create Guest</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Booking
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create New Booking</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleBookingSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="hotel">Hotel</Label>
-                    <select
-                      id="hotel"
-                      className="w-full p-2 border rounded-md"
-                      value={bookingFormData.hotel_id}
-                      onChange={(e) => setBookingFormData({ ...bookingFormData, hotel_id: e.target.value })}
-                      required
-                    >
-                      <option value="">Select hotel</option>
-                      {hotels.map((hotel) => (
-                        <option key={hotel.id} value={hotel.id}>
-                          {hotel.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="room">Room</Label>
-                    <select
-                      id="room"
-                      className="w-full p-2 border rounded-md"
-                      value={bookingFormData.room_id}
-                      onChange={(e) => setBookingFormData({ ...bookingFormData, room_id: e.target.value })}
-                      required
-                    >
-                      <option value="">Select room</option>
-                      {rooms
-                        .filter(room => room.status === 'available' && 
-                          (!bookingFormData.hotel_id || room.hotel_id.toString() === bookingFormData.hotel_id))
-                        .map((room) => (
-                        <option key={room.id} value={room.id}>
-                          {room.room_number} - {room.room_type_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="checkIn">Check-in Date</Label>
-                    <Input
-                      id="checkIn"
-                      type="datetime-local"
-                      value={bookingFormData.check_in_date}
-                      onChange={(e) => setBookingFormData({ ...bookingFormData, check_in_date: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="checkOut">Check-out Date</Label>
-                    <Input
-                      id="checkOut"
-                      type="datetime-local"
-                      value={bookingFormData.check_out_date}
-                      onChange={(e) => setBookingFormData({ ...bookingFormData, check_out_date: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="amount">Total Amount ($)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      step="0.01"
-                      value={bookingFormData.total_amount}
-                      onChange={(e) => setBookingFormData({ ...bookingFormData, total_amount: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="bookingType">Booking Type</Label>
-                    <select
-                      id="bookingType"
-                      className="w-full p-2 border rounded-md"
-                      value={bookingFormData.booking_type}
-                      onChange={(e) => setBookingFormData({ ...bookingFormData, booking_type: e.target.value })}
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="hourly">Hourly</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="requests">Special Requests</Label>
-                  <Input
-                    id="requests"
-                    value={bookingFormData.special_requests}
-                    onChange={(e) => setBookingFormData({ ...bookingFormData, special_requests: e.target.value })}
-                    placeholder="Late checkout, extra towels, etc."
-                  />
-                </div>
-                <Button type="submit" className="w-full">Create Booking</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Bookings Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage reservations and payments</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={loadData} size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button variant="secondary" onClick={() => setGuestDialogOpen(true)} size="sm">
+            <User className="h-4 w-4 mr-2" />
+            Add Guest
+          </Button>
+          <Button onClick={() => setBookingDialogOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            New Booking
+          </Button>
         </div>
       </div>
 
       {/* Bookings List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2" />
-            Recent Bookings ({bookings.length})
+      <Card className="border shadow-none rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-lg">
+            <Calendar className="h-5 w-5 mr-2 text-primary" />
+            Recent Bookings <Badge variant="secondary" className="ml-2">{bookings.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {bookings.map((booking) => (
-              <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <h3 className="font-medium">
-                      {booking.guest_name || `Guest #${booking.guest_id}`}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {booking.hotel_name} - Room {booking.room_number}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right text-sm">
-                    <div>{new Date(booking.check_in_date).toLocaleDateString()}</div>
-                    <div className="text-muted-foreground">
-                      to {new Date(booking.check_out_date).toLocaleDateString()}
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading bookings...</div>
+            ) : bookings.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No bookings found.</div>
+            ) : (
+              bookings.map((booking) => (
+                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors gap-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="bg-primary/10 p-2.5 rounded-full mt-1">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-base">
+                        {booking.guest_name || `Guest #${booking.guest_id}`}
+                      </h3>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-muted-foreground mt-0.5">
+                        <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">{booking.booking_code}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span>{booking.hotel_name || 'Main Hotel'}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="font-medium text-foreground">Room {booking.room_number || booking.assigned_to}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium">${booking.total_amount}</div>
-                    <Badge
-                      className={`text-xs ${getStatusColor(booking.status)}`}
-                      variant="secondary"
-                    >
-                      {booking.status}
-                    </Badge>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 min-w-[200px] justify-end">
+                    <div className="text-left sm:text-right text-sm">
+                      <div className="font-medium">
+                        {new Date(booking.check_in).toLocaleDateString()}
+                        <span className="text-muted-foreground mx-1">→</span>
+                        {new Date(booking.check_out).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {booking.total_hours ? `${booking.total_hours} Hours` : `${booking.total_nights} Nights`}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3 min-w-[140px]">
+                      <div className="text-right">
+                        <div className="font-bold">${booking.total_amount}</div>
+                        <Badge className={`${getStatusColor(booking.booking_status)} text-[10px] h-5 px-1.5 mt-0.5 border-0`}>
+                          {booking.booking_status}
+                        </Badge>
+                      </div>
+
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 hover:bg-primary/10 hover:text-primary rounded-full"
+                        onClick={() => {
+                          setSelectedBooking(booking);
+                          setPaymentDialogOpen(true);
+                        }}
+                        title="Record Payment"
+                      >
+                        <CreditCard className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedBooking(booking);
-                      setPaymentDialogOpen(true);
-                    }}
-                  >
-                    <CreditCard className="h-4 w-4" />
-                  </Button>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Payment Dialog */}
-      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handlePaymentSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="paymentAmount">Amount ($)</Label>
-              <Input
-                id="paymentAmount"
-                type="number"
-                step="0.01"
-                value={paymentFormData.amount}
-                onChange={(e) => setPaymentFormData({ ...paymentFormData, amount: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="paymentMethod">Payment Method</Label>
-              <select
-                id="paymentMethod"
-                className="w-full p-2 border rounded-md"
-                value={paymentFormData.payment_method}
-                onChange={(e) => setPaymentFormData({ ...paymentFormData, payment_method: e.target.value })}
-              >
-                <option value="cash">Cash</option>
-                <option value="card">Credit Card</option>
-                <option value="transfer">Bank Transfer</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="reference">Reference Number</Label>
-              <Input
-                id="reference"
-                value={paymentFormData.reference_number}
-                onChange={(e) => setPaymentFormData({ ...paymentFormData, reference_number: e.target.value })}
-                placeholder="Transaction ID, receipt number, etc."
-              />
-            </div>
-            <Button type="submit" className="w-full">Record Payment</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Modals */}
+      <AddGuestModal
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSuccess={loadData}
+      />
+
+      <CreateBookingModal
+        open={bookingDialogOpen}
+        onOpenChange={setBookingDialogOpen}
+        onSuccess={loadData}
+        guests={guests}
+        rooms={rooms} // Pass rooms for selection logic
+      />
+
+      <RecordPaymentModal
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        onSuccess={loadData}
+        booking={selectedBooking}
+      />
     </div>
   );
 }

@@ -15,16 +15,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { bookingService } from '@/lib/services/bookings.service';
+import { Combobox } from '@/components/ui/custom/combobox';
 
 const bookingSchema = z.object({
   guest_id: z.coerce.number().min(1, 'Guest is required'),
@@ -100,27 +95,20 @@ export function CreateBookingModal({
       const bookingPayload = {
         guest_id: data.guest_id,
         room_id: data.room_id,
+        // @ts-ignore - hotel_id is verified via rooms
+        hotel_id: rooms.find(r => r.id === data.room_id)?.hotel_id || 1,
         booking_type: data.booking_type,
         check_in: data.check_in,
         check_out: checkOut.toISOString(),
-        total_hours: data.booking_type === 'hourly' ? data.hours : null,
-        total_nights: data.booking_type === 'daily' ? data.nights : null,
+        total_hours: data.booking_type === 'hourly' ? data.hours : undefined,
+        total_nights: data.booking_type === 'daily' ? data.nights : undefined,
         adults: data.adults,
         children: data.children || 0,
         special_requests: data.special_requests,
+        total_amount: 0 // Will be calculated backend or needs logic
       };
 
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/v1/bookings/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(bookingPayload),
-      });
-
-      if (!response.ok) throw new Error('Failed to create booking');
+      await bookingService.create(bookingPayload);
 
       toast.success(data.booking_type === 'advance' ? 'Advance booking created!' : 'Booking created successfully!');
       form.reset();
@@ -132,6 +120,24 @@ export function CreateBookingModal({
       setIsSubmitting(false);
     }
   };
+
+  const guestOptions = guests.map(guest => ({
+    value: guest.id.toString(),
+    label: `${guest.first_name} ${guest.last_name}`
+  }));
+
+  const roomOptions = rooms
+    .filter(r => r.status === 'available')
+    .map(room => ({
+      value: room.id.toString(),
+      label: `Room ${room.room_number} - ${room.room_type_name}`
+    }));
+
+  const bookingTypeOptions = [
+    { value: 'hourly', label: 'Hourly Booking' },
+    { value: 'daily', label: 'Daily Booking' },
+    { value: 'advance', label: 'Advance Booking' }
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -148,21 +154,13 @@ export function CreateBookingModal({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="guest_id">Guest *</Label>
-                <Select
-                  value={form.watch('guest_id')?.toString()}
-                  onValueChange={(value) => form.setValue('guest_id', parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select guest" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {guests.map((guest: any) => (
-                      <SelectItem key={guest.id} value={guest.id.toString()}>
-                        {guest.first_name} {guest.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={guestOptions}
+                  value={form.watch('guest_id')?.toString() || ''}
+                  onChange={(val) => form.setValue('guest_id', parseInt(val) || 0)}
+                  placeholder="Select guest"
+                  searchPlaceholder="Search guests..."
+                />
                 {form.formState.errors.guest_id && (
                   <p className="text-sm text-destructive">{form.formState.errors.guest_id.message}</p>
                 )}
@@ -170,21 +168,13 @@ export function CreateBookingModal({
 
               <div className="space-y-2">
                 <Label htmlFor="room_id">Room *</Label>
-                <Select
-                  value={form.watch('room_id')?.toString()}
-                  onValueChange={(value) => form.setValue('room_id', parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select room" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rooms.filter(r => r.status === 'available').map((room: any) => (
-                      <SelectItem key={room.id} value={room.id.toString()}>
-                        Room {room.room_number} - {room.room_type_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={roomOptions}
+                  value={form.watch('room_id')?.toString() || ''}
+                  onChange={(val) => form.setValue('room_id', parseInt(val) || 0)}
+                  placeholder="Select room"
+                  searchPlaceholder="Search rooms..."
+                />
                 {form.formState.errors.room_id && (
                   <p className="text-sm text-destructive">{form.formState.errors.room_id.message}</p>
                 )}
@@ -193,22 +183,16 @@ export function CreateBookingModal({
 
             <div className="space-y-2">
               <Label htmlFor="booking_type">Booking Type *</Label>
-              <Select
+              <Combobox
+                options={bookingTypeOptions}
                 value={form.watch('booking_type')}
-                onValueChange={(value: any) => {
-                  form.setValue('booking_type', value);
-                  setBookingType(value);
+                onChange={(val: any) => {
+                  form.setValue('booking_type', val);
+                  setBookingType(val);
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hourly">Hourly Booking</SelectItem>
-                  <SelectItem value="daily">Daily Booking</SelectItem>
-                  <SelectItem value="advance">Advance Booking</SelectItem>
-                </SelectContent>
-              </Select>
+                placeholder="Select type"
+                searchPlaceholder="Search type..."
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

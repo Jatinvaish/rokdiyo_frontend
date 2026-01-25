@@ -6,10 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import DynamicSummaryCard, { SummaryCardData } from '@/components/dynamicSummaryCard';
 import { CreateBookingModal } from '@/components/forms/create-booking-modal';
+import { CreateAdvancedBookingModal } from '@/components/forms/create-advanced-booking-modal';
 import { AddGuestModal } from '@/components/forms/add-guest-modal';
 import { roomService } from '@/lib/services/rooms.service';
 import { guestService } from '@/lib/services/guests.service';
 import { hotelService } from '@/lib/services/hotels.service';
+import { bookingService } from '@/lib/services/bookings.service';
+import { CustomDateRangePicker } from '@/components/custom-date-range-picker';
+import { DateRange } from 'react-day-picker';
+import { subDays, format } from 'date-fns';
 import {
   Clock,
   CheckCircle2,
@@ -21,7 +26,8 @@ import {
   CalendarPlus,
   LogIn,
   LogOut,
-  Sparkles
+  Sparkles,
+  MoreHorizontal
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -33,72 +39,86 @@ export default function DashboardPage() {
   const [hotels, setHotels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Date Range State
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+
   // Modal states
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [advBookingOpen, setAdvBookingOpen] = useState(false);
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number | undefined>();
   const [selectedRoomNumber, setSelectedRoomNumber] = useState<string | undefined>();
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [dateRange]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [roomsData, guestsData, hotelsData] = await Promise.all([
-        roomService.list(),
-        guestService.list(),
+      const fromDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
+      const toDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
+
+      // Passing filters to list APIs if supported
+      // Use higher limit for dashboard to show all rooms/guests in dropdowns
+      const [roomsData, guestsData, hotelsData, rangeBookingsData] = await Promise.all([
+        roomService.list({ limit: 1000 }),
+        guestService.list({ limit: 1000 }),
         hotelService.list(),
+        bookingService.list({ fromDate, toDate, limit: 1000 })
       ]);
 
-      setRooms(roomsData as any);
-      setGuests(guestsData as any);
+      setRooms(roomsData?.data || []);
+      setGuests(guestsData?.data || []);
       setHotels(hotelsData as any);
 
       // Calculate comprehensive stats
-      const totalRooms = (roomsData as any)?.length || 0;
-      const availableRooms = (roomsData as any)?.filter((r: any) => r.status === 'available').length || 0;
-      const occupiedRooms = (roomsData as any)?.filter((r: any) => r.status === 'occupied').length || 0;
-      const cleaningRooms = (roomsData as any)?.filter((r: any) => r.status === 'cleaning' || r.status === 'maintenance').length || 0;
-      const advanceRooms = (roomsData as any)?.filter((r: any) => r.status === 'advance').length || 0;
+      const totalRooms = roomsData?.data?.length || 0;
+      const availableRooms = roomsData?.data?.filter((r: any) => r.status === 'available').length || 0;
+      const occupiedRooms = roomsData?.data?.filter((r: any) => r.status === 'occupied').length || 0;
+
+      const rangeRevenue = rangeBookingsData?.data?.reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0) || 0;
+      const rangeBookings = rangeBookingsData?.meta?.total || 0;
 
       setStats([
         {
           title: 'Available',
           value: availableRooms,
-          changeValue: totalRooms > 0 ? Math.round((availableRooms / totalRooms) * 100) : 0,
+          changeValue: 0,
           icon: 'checkCircle',
           bgColor: 'green',
           suffix: ' rooms',
-          changeLabel: '% of total',
+          changeLabel: 'Current Status',
         },
         {
           title: 'Occupied',
           value: occupiedRooms,
-          changeValue: totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0,
+          changeValue: 0,
           icon: 'users',
           bgColor: 'red',
           suffix: ' rooms',
-          changeLabel: '% occupancy',
+          changeLabel: 'Current Status',
         },
         {
-          title: 'Cleaning',
-          value: cleaningRooms,
-          changeValue: totalRooms > 0 ? Math.round((cleaningRooms / totalRooms) * 100) : 0,
-          icon: 'clock',
-          bgColor: 'yellow',
-          suffix: ' rooms',
-          changeLabel: '% in service',
-        },
-        {
-          title: 'Advance Bookings',
-          value: advanceRooms,
-          changeValue: totalRooms > 0 ? Math.round((advanceRooms / totalRooms) * 100) : 0,
-          icon: 'calendar',
+          title: 'Revenue',
+          value: rangeRevenue,
+          changeValue: 0,
+          icon: 'trendingUp',
           bgColor: 'blue',
+          prefix: '$',
+          changeLabel: 'Selected Range',
+        },
+        {
+          title: 'Total Bookings',
+          value: rangeBookings,
+          changeValue: 0,
+          icon: 'calendar',
+          bgColor: 'yellow',
           suffix: ' bookings',
-          changeLabel: '% pre-booked',
+          changeLabel: 'Selected Range',
         },
       ]);
     } catch (error) {
@@ -109,25 +129,28 @@ export default function DashboardPage() {
     }
   };
 
-  const handleQuickAction = async (roomId: number, action: 'checkin' | 'checkout' | 'book' | 'advance') => {
+  const handleQuickAction = async (roomId: number, action: 'checkin' | 'checkout' | 'book' | 'advance' | 'clean') => {
     const room = rooms.find(r => r.id === roomId);
     if (!room) return;
 
     try {
       if (action === 'book' || action === 'advance') {
-        // Open booking modal
         setSelectedRoomId(roomId);
         setSelectedRoomNumber(room.room_number);
         setBookingModalOpen(true);
       } else if (action === 'checkin') {
-        // Change status from available/advance to occupied
-        await roomService.updateStatus(roomId, 'occupied');
-        toast.success(`Room ${room.room_number} checked in!`);
-        loadData();
+        // Now opens booking modal to enforce guest selection
+        setSelectedRoomId(roomId);
+        setSelectedRoomNumber(room.room_number);
+        setBookingModalOpen(true);
+        toast.info("Please select a guest for check-in");
       } else if (action === 'checkout') {
-        // Change status from occupied to cleaning
         await roomService.updateStatus(roomId, 'cleaning');
         toast.success(`Room ${room.room_number} checked out!`);
+        loadData();
+      } else if (action === 'clean') {
+        await roomService.updateStatus(roomId, 'available');
+        toast.success(`Room ${room.room_number} is now Ready!`);
         loadData();
       }
     } catch (error: any) {
@@ -136,47 +159,48 @@ export default function DashboardPage() {
   };
 
   const getRoomStatusConfig = (status: string) => {
+    // Solid, minimal colors without hover scales
     switch (status) {
       case 'available':
         return {
-          color: 'border-green-400 bg-green-50 dark:bg-green-950/20',
-          badgeColor: 'bg-green-500 text-white',
+          bg: 'bg-emerald-50 dark:bg-emerald-950/20',
+          border: 'border-emerald-200 dark:border-emerald-900',
+          text: 'text-emerald-700 dark:text-emerald-400',
           icon: CheckCircle2,
-          iconColor: 'text-green-600',
-          label: 'Available',
+          label: 'Available'
         };
       case 'occupied':
         return {
-          color: 'border-red-400 bg-red-50 dark:bg-red-950/20',
-          badgeColor: 'bg-red-500 text-white',
+          bg: 'bg-rose-50 dark:bg-rose-950/20',
+          border: 'border-rose-200 dark:border-rose-900',
+          text: 'text-rose-700 dark:text-rose-400',
           icon: User,
-          iconColor: 'text-red-600',
-          label: 'Occupied',
+          label: 'Occupied'
         };
       case 'cleaning':
       case 'maintenance':
         return {
-          color: 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20',
-          badgeColor: 'bg-yellow-500 text-white',
+          bg: 'bg-amber-50 dark:bg-amber-950/20',
+          border: 'border-amber-200 dark:border-amber-900',
+          text: 'text-amber-700 dark:text-amber-400',
           icon: Clock,
-          iconColor: 'text-yellow-600',
-          label: 'Cleaning',
+          label: 'Cleaning'
         };
       case 'advance':
         return {
-          color: 'border-blue-400 bg-blue-50 dark:bg-blue-950/20',
-          badgeColor: 'bg-blue-500 text-white',
+          bg: 'bg-blue-50 dark:bg-blue-950/20',
+          border: 'border-blue-200 dark:border-blue-900',
+          text: 'text-blue-700 dark:text-blue-400',
           icon: Calendar,
-          iconColor: 'text-blue-600',
-          label: 'Advance',
+          label: 'Advance'
         };
       default:
         return {
-          color: 'border-gray-300 bg-gray-50 dark:bg-gray-950/20',
-          badgeColor: 'bg-gray-500 text-white',
+          bg: 'bg-slate-50 dark:bg-slate-900',
+          border: 'border-slate-200 dark:border-slate-800',
+          text: 'text-slate-700 dark:text-slate-400',
           icon: XCircle,
-          iconColor: 'text-gray-600',
-          label: 'Unknown',
+          label: 'Unknown'
         };
     }
   };
@@ -195,161 +219,121 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-1">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Property Dashboard
           </h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-            Real-time room management & bookings
+          <p className="text-muted-foreground text-sm">
+            Real-time operations overview
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          <Button size="sm" variant="outline" onClick={() => setGuestModalOpen(true)} className="w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 sm:items-center">
+          <CustomDateRangePicker
+            date={dateRange}
+            onDateChange={setDateRange}
+          />
+          <Button size="sm" variant="secondary" onClick={() => setAdvBookingOpen(true)}>
+            <MoreHorizontal className="h-4 w-4 mr-1" />
+            Advanced Booking
+          </Button>
+          <Button size="sm" onClick={() => setBookingModalOpen(true)}>
+            <CalendarPlus className="h-4 w-4 mr-1" />
+            Quick Book
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setGuestModalOpen(true)}>
             <UserPlus className="h-4 w-4 mr-1" />
             Add Guest
-          </Button>
-          <Button size="sm" onClick={() => setBookingModalOpen(true)} className="w-full sm:w-auto">
-            <CalendarPlus className="h-4 w-4 mr-1" />
-            New Booking
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Dense */}
       <DynamicSummaryCard cards={stats} />
 
-      {/* Rooms Grid - POS Style */}
-      <Card className="border-2">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Hotel className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold">Live Room Status</h2>
-              <Badge variant="outline" className="ml-2">{rooms.length} Total</Badge>
-            </div>
-            <Button variant="ghost" size="sm" onClick={loadData}>
-              Refresh
-            </Button>
-          </div>
+      {/* Rooms Grid - Minimal Dense */}
+      <CardContent className="p-1">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center">
+            <Hotel className="h-5 w-5 mr-2 text-primary" />
+            Room Status
+            <Badge variant="secondary" className="ml-2 text-xs font-normal">
+              {rooms.length} Rooms
+            </Badge>
+          </h2>
+          <Button variant="ghost" size="sm" onClick={loadData} className="h-8 text-xs">
+            Refresh Data
+          </Button>
+        </div>
 
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {rooms.map((room: any) => {
-              const config = getRoomStatusConfig(room.status);
-              const StatusIcon = config.icon;
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+          {rooms.map((room: any) => {
+            const config = getRoomStatusConfig(room.status);
+            const StatusIcon = config.icon;
 
-              return (
-                <Card
-                  key={room.id}
-                  className={cn(
-                    "relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:scale-105 border-2",
-                    config.color
-                  )}
-                >
-                  <CardContent className="p-3 space-y-2">
-                    {/* Room Header */}
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="text-2xl font-bold text-foreground">
-                          {room.room_number}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {room.room_type_name}
-                        </div>
-                      </div>
-                      <StatusIcon className={cn("h-5 w-5", config.iconColor)} />
-                    </div>
+            return (
+              <div
+                key={room.id}
+                className={cn(
+                  "flex flex-col justify-between p-2 rounded-lg border transition-colors min-h-[90px]",
+                  config.bg,
+                  config.border
+                )}
+              >
+                <div className="flex justify-between items-start">
+                  <span className="font-bold text-sm">{room.room_number}</span>
+                  <StatusIcon className={cn("h-3 w-3", config.text)} />
+                </div>
 
-                    {/* Status Badge */}
-                    <Badge className={cn("w-full justify-center text-xs", config.badgeColor)}>
+                <div className="text-[10px] text-muted-foreground truncate my-1">
+                  {room.room_type_name}
+                </div>
+
+                <div className="mt-auto">
+                  {room.status === 'available' ? (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="w-full h-6 text-[10px] p-0 bg-primary/90 hover:bg-primary"
+                      onClick={() => handleQuickAction(room.id, 'checkin')}
+                    >
+                      Book
+                    </Button>
+                  ) : room.status === 'occupied' ? (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="w-full h-6 text-[10px] p-0"
+                      onClick={() => handleQuickAction(room.id, 'checkout')}
+                    >
+                      Check-out
+                    </Button>
+                  ) : (room.status === 'cleaning' || room.status === 'maintenance') ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full h-6 text-[10px] p-0 border-amber-200 hover:bg-amber-100 hover:text-amber-800 dark:hover:bg-amber-900/30"
+                      onClick={() => handleQuickAction(room.id, 'clean')}
+                    >
+                      Mark Ready
+                    </Button>
+                  ) : (
+                    <Badge variant="outline" className="w-full justify-center text-[10px] h-6 border-primary/20">
                       {config.label}
                     </Badge>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-                    {/* Room Info */}
-                    <div className="text-xs space-y-1 text-muted-foreground">
-                      <div className="flex items-center justify-between">
-                        <span>Floor:</span>
-                        <span className="font-medium text-foreground">{room.floor}</span>
-                      </div>
-                      <div className="truncate">
-                        <span className="text-xs">{room.hotel_name}</span>
-                      </div>
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="pt-2 space-y-1">
-                      {room.status === 'available' && (
-                        <>
-                          <Button
-                            size="sm"
-                            className="w-full h-7 text-xs"
-                            onClick={() => handleQuickAction(room.id, 'checkin')}
-                          >
-                            <LogIn className="h-3 w-3 mr-1" />
-                            Quick Check-in
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full h-7 text-xs"
-                            onClick={() => handleQuickAction(room.id, 'book')}
-                          >
-                            <Calendar className="h-3 w-3 mr-1" />
-                            Book Now
-                          </Button>
-                        </>
-                      )}
-
-                      {room.status === 'occupied' && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="w-full h-7 text-xs"
-                          onClick={() => handleQuickAction(room.id, 'checkout')}
-                        >
-                          <LogOut className="h-3 w-3 mr-1" />
-                          Check-out
-                        </Button>
-                      )}
-
-                      {(room.status === 'cleaning' || room.status === 'maintenance') && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full h-7 text-xs"
-                          onClick={() => roomService.updateStatus(room.id, 'available').then(loadData)}
-                        >
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Mark Available
-                        </Button>
-                      )}
-
-                      {room.status === 'advance' && (
-                        <Button
-                          size="sm"
-                          className="w-full h-7 text-xs"
-                          onClick={() => handleQuickAction(room.id, 'checkin')}
-                        >
-                          <LogIn className="h-3 w-3 mr-1" />
-                          Check-in Now
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+        {rooms.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-sm text-muted-foreground">No rooms configured.</p>
           </div>
-
-          {rooms.length === 0 && (
-            <div className="text-center py-12">
-              <Hotel className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-sm font-medium">No rooms found</p>
-              <p className="text-xs text-muted-foreground">Add rooms to start managing bookings</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </CardContent>
 
       {/* Modals */}
       <CreateBookingModal
@@ -358,6 +342,13 @@ export default function DashboardPage() {
         onSuccess={loadData}
         preselectedRoomId={selectedRoomId}
         preselectedRoomNumber={selectedRoomNumber}
+        guests={guests}
+        rooms={rooms}
+      />
+      <CreateAdvancedBookingModal
+        open={advBookingOpen}
+        onOpenChange={setAdvBookingOpen}
+        onSuccess={loadData}
         guests={guests}
         rooms={rooms}
       />
