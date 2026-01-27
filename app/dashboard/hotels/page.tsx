@@ -9,6 +9,7 @@ import { hotelService } from '@/lib/services/hotels.service';
 import { Hotel } from '@/lib/types/hotel';
 import { Plus, Building2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { CommonLoading } from '@/components/ui/common-loading';
 
 export default function HotelsPage() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
@@ -34,12 +35,12 @@ export default function HotelsPage() {
   const headquarters = hotels.filter(h => h.is_headquarters);
   const branches = hotels.filter(h => !h.is_headquarters);
 
-  if (loading) {
-    return <div className="p-4">Loading...</div>;
+  if (loading && hotels.length === 0) {
+    return <CommonLoading message="Fetching Hotel list..." />;
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-6   animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Hotels</h1>
         <Button size="sm" onClick={() => setDialogOpen(true)}>

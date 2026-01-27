@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 import { Eye, EyeOff, Phone, Globe, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,77 +20,89 @@ interface PasswordInputProps
 /**
  * Password Input with eye icon toggle
  */
-export const PasswordInput = ({
-  showToggle = true,
-  className,
-  ...props
-}: PasswordInputProps) => {
-  const [showPassword, setShowPassword] = useState(false);
+export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
+  ({ showToggle = true, className, ...props }, ref) => {
+    const [showPassword, React_setShowPassword] = React.useState(false);
 
-  return (
-    <div className="relative">
-      <Input
-        type={showPassword ? "text" : "password"}
-        className={cn("pr-10", className)}
-        {...props}
-      />
-      {showToggle && (
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          tabIndex={-1}
-        >
-          {showPassword ? (
-            <EyeOff className="h-4 w-4" />
-          ) : (
-            <Eye className="h-4 w-4" />
-          )}
-        </button>
-      )}
-    </div>
-  );
-};
+    return (
+      <div className="relative">
+        <Input
+          type={showPassword ? "text" : "password"}
+          className={cn("pr-10", className)}
+          ref={ref}
+          {...props}
+        />
+        {showToggle && (
+          <button
+            type="button"
+            onClick={() => React_setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            tabIndex={-1}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        )}
+      </div>
+    );
+  }
+);
+PasswordInput.displayName = "PasswordInput";
 
 interface PhoneInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+  extends React.InputHTMLAttributes<HTMLInputElement> { }
 
 /**
  * Phone Input with icon
  */
-export const PhoneInput = ({ className, ...props }: PhoneInputProps) => {
-  return (
-    <div className="relative">
-      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-      <Input
-        type="tel"
-        placeholder="+91 98765 43210"
-        className={cn("pl-10", className)}
-        {...props}
-      />
-    </div>
-  );
-};
+export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <div className="relative">
+        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          type="tel"
+          placeholder="+91 98765 43210"
+          className={cn("pl-10", className)}
+          ref={ref}
+          {...props}
+        />
+      </div>
+    );
+  }
+);
+PhoneInput.displayName = "PhoneInput";
 
 interface WebsiteInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+  extends React.InputHTMLAttributes<HTMLInputElement> { }
 
 /**
  * Website Input with icon
  */
-export const WebsiteInput = ({ className, ...props }: WebsiteInputProps) => {
-  return (
-    <div className="relative">
-      <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-      <Input
-        type="url"
-        placeholder="https://example.com"
-        className={cn("pl-10", className)}
-        {...props}
-      />
-    </div>
-  );
-};
+export const WebsiteInput = React.forwardRef<HTMLInputElement, WebsiteInputProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <div className="relative">
+        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          type="url"
+          placeholder="https://example.com"
+          className={cn("pl-10", className)}
+          ref={ref}
+          {...props}
+        />
+      </div>
+    );
+  }
+);
+WebsiteInput.displayName = "WebsiteInput";
+
+// TimezoneSelect and CurrencySelect use separate value/onValueChange props, 
+// so register() alone might not be enough, but we should use Controller anyway.
+// However, the user is having issues with string fields like first_name/phone.
 
 interface TimezoneSelectProps {
   value: string;
@@ -163,6 +175,7 @@ export const CurrencySelect = ({
     { value: "CAD", label: "CAD ($)" },
     { value: "JPY", label: "JPY (¥)" },
     { value: "SGD", label: "SGD (S$)" },
+    { value: "AED", label: "AED (د.إ)" },
   ];
 
   return (

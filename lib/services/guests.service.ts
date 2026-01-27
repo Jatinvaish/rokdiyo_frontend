@@ -4,15 +4,23 @@ import { ApiResponse, Guest, PaginatedResponse } from "../types/hotel";
 
 export interface CreateGuestDto {
   first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  id_type: string;
-  id_number: string;
+  last_name?: string;
+  email?: string;
+  phone: string;
+  phone_secondary?: string;
+  id_type?: string;
+  id_number?: string;
   id_document_url?: string;
   date_of_birth?: string;
+  gender?: string;
   nationality?: string;
   address?: string;
+  company_name?: string;
+  gst_number?: string;
+  vip_status?: string;
+  notes?: string;
+  blacklisted?: boolean;
+  blacklist_reason?: string;
 }
 
 export const guestService = {
@@ -97,4 +105,29 @@ export const guestService = {
       throw new Error(error.message || "Failed to update guest");
     }
   },
+
+  async uploadDocument(file: File): Promise<{ url: string; key: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await apiClient.post<any>(
+        '/guests/upload-document',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.success) {
+        return { url: response.url, key: response.key };
+      }
+      throw new Error(response.message || 'Upload failed');
+    } catch (error: any) {
+      console.error("Upload document failed:", error);
+      throw new Error(error.message || "Failed to upload document");
+    }
+  }
 };

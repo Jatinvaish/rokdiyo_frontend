@@ -10,6 +10,7 @@ import { Tenant } from '@/lib/types/tenant';
 import { AddTenantModal } from '@/components/tenant/add-tenant-modal';
 import DynamicSummaryCard, { SummaryCardData } from '@/components/dynamicSummaryCard';
 import { Search, Plus } from 'lucide-react';
+import { CommonLoading } from '@/components/ui/common-loading';
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -23,7 +24,7 @@ export default function TenantsPage() {
   }, []);
 
   const loadTenants = async () => {
-    setLoading(true);
+    setLoading(tenants.length === 0);
     try {
       const result = await tenantService.getTenants(1, 100, searchQuery, filterActive);
       setTenants((result.data || []) as any);
@@ -68,8 +69,12 @@ export default function TenantsPage() {
     },
   ];
 
+  if (loading) {
+    return <CommonLoading message="Fetching Tenants..." />;
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tenants</h1>

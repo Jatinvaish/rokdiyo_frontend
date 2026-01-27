@@ -75,14 +75,30 @@ export interface Room {
 
 export interface Guest {
   id: number;
-  tenantId: number;
+  tenant_id: number;
+  guest_code: string;
   first_name: string;
-  last_name: string;
-  email: string;
+  last_name?: string;
+  email?: string;
   phone: string;
-  id_type: string;
-  id_number: string;
+  phone_secondary?: string;
+  id_type?: string;
+  id_number?: string;
+  id_document_url?: string;
+  date_of_birth?: string;
+  gender?: string;
+  nationality?: string;
   address?: string;
+  company_name?: string;
+  gst_number?: string;
+  vip_status?: string;
+  loyalty_tier?: string;
+  loyalty_points?: number;
+  blacklisted?: boolean;
+  blacklist_reason?: string;
+  notes?: string;
+  firm_id?: number;
+  branch_id?: number;
   created_at: string;
   updated_at: string;
 }

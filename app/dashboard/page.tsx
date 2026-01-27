@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { CommonLoading } from '@/components/ui/common-loading';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<SummaryCardData[]>([]);
@@ -206,18 +207,11 @@ export default function DashboardPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-2">
-          <Sparkles className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <CommonLoading message="Preparing Dashboard..." />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6   animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Section */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-1">
         <div>

@@ -11,6 +11,7 @@ import { Guest } from '@/lib/types/hotel';
 import { Plus, User, Search, History } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { CommonLoading } from '@/components/ui/common-loading';
 
 export default function GuestsPage() {
   const [guests, setGuests] = useState<Guest[]>([]);
@@ -21,6 +22,7 @@ export default function GuestsPage() {
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [guestHistory, setGuestHistory] = useState<any[]>([]);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
 
   useEffect(() => {
     loadGuests();
@@ -28,8 +30,8 @@ export default function GuestsPage() {
 
   const loadGuests = async () => {
     try {
-      const data = await guestService.list();
-      setGuests(data as any);
+      const response = await guestService.list();
+      setGuests(response.data || []);
     } catch (error) {
       console.error('Failed to load guests:', error);
       toast.error('Failed to load guests');
@@ -61,15 +63,25 @@ export default function GuestsPage() {
     }
   };
 
+  const handleEdit = (guest: Guest) => {
+    setEditingGuest(guest);
+    setDialogOpen(true);
+  };
+
+  const handleCreateNew = () => {
+    setEditingGuest(null);
+    setDialogOpen(true);
+  };
+
   if (loading) {
-    return <div className="p-4">Loading...</div>;
+    return <CommonLoading message="Fetching Guests..." />;
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-6   animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Guests</h1>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
+        <Button size="sm" onClick={handleCreateNew}>
           <Plus className="h-4 w-4 mr-1" />
           Add Guest
         </Button>
@@ -143,26 +155,56 @@ export default function GuestsPage() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {guests.map((guest) => (
-                <div key={guest.id} className="flex items-center justify-between p-2 border rounded text-sm">
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium text-sm">{guest.first_name} {guest.last_name}</p>
-                      <p className="text-xs text-muted-foreground">{guest.email}</p>
+                <div key={guest.id} className="group flex flex-col p-4 border rounded-xl hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 gap-3 relative overflow-hidden">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <User className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm tracking-tight">{guest.first_name} {guest.last_name}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{guest.guest_code || `#G-${guest.id}`}</p>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] uppercase font-bold px-1.5 h-5">
+                      {guest.vip_status || 'Regular'}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <span className="w-16 font-semibold uppercase text-[9px]">Phone</span>
+                      <span className="text-foreground">{guest.phone}</span>
+                    </div>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <span className="w-16 font-semibold uppercase text-[9px]">Email</span>
+                      <span className="text-foreground truncate max-w-[150px]">{guest.email || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <span className="w-16 font-semibold uppercase text-[9px]">Identity</span>
+                      <span className="text-foreground truncate">{guest.id_type?.replace('_', ' ') || 'NONE'}</span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline" className="text-xs">{guest.id_type}: {guest.id_number}</Badge>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-primary/5">
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="ghost"
                       onClick={() => handleViewHistory(guest)}
-                      className="h-6 text-xs"
+                      className="h-7 text-[10px] uppercase font-bold tracking-wider hover:text-primary"
                     >
-                      <History className="h-3 w-3 mr-1" />
+                      <History className="h-3 w-3 mr-1.5" />
                       History
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEdit(guest)}
+                      className="h-7 text-[10px] uppercase font-bold tracking-wider hover:text-primary"
+                    >
+                      Edit Profile
                     </Button>
                   </div>
                 </div>
@@ -214,6 +256,7 @@ export default function GuestsPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSuccess={loadGuests}
+        initialData={editingGuest}
       />
     </div>
   );

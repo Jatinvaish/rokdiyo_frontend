@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import DynamicSummaryCards, { SummaryCardData } from '@/components/dynamicSummaryCard';
+import { CommonLoading } from '@/components/ui/common-loading';
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -167,18 +168,11 @@ export default function RoomsPage() {
   };
 
   if (loading && rooms.length === 0) {
-    return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary"></div>
-        </div>
-        <p className="text-muted-foreground animate-pulse font-medium text-xs">Loading inventory...</p>
-      </div>
-    );
+    return <CommonLoading message="Loading inventory..." />;
   }
 
   return (
-    <div className="  space-y-4 w-full animate-in fade-in duration-500">
+    <div className="space-y-6   animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-0.5">

@@ -13,6 +13,7 @@ import { Plus, Calendar, User, CreditCard, RefreshCw } from 'lucide-react';
 import { AddGuestModal } from '@/components/forms/add-guest-modal';
 import { CreateBookingModal } from '@/components/forms/create-booking-modal';
 import { RecordPaymentModal } from '@/components/forms/record-payment-modal';
+import { CommonLoading } from '@/components/ui/common-loading';
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -59,8 +60,12 @@ export default function BookingsPage() {
     }
   };
 
+  if (loading && bookings.length === 0) {
+    return <CommonLoading message="Fetching reservations..." />;
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Bookings Management</h1>
@@ -92,9 +97,7 @@ export default function BookingsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading bookings...</div>
-            ) : bookings.length === 0 ? (
+            {bookings.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">No bookings found.</div>
             ) : (
               bookings.map((booking) => (
