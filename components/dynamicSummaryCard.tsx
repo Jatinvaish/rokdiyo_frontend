@@ -61,7 +61,7 @@ export default function DynamicSummaryCards({ cards }: SummaryCardsProps) {
           const changeSign = card.changeValue >= 0 ? "+" : "";
 
           return (
-            <div key={index} className="bg-card w-full flex flex-col justify-between p-2 lg:p-4 hover:bg-muted/50 transition-colors">
+            <div key={index} className="bg-card w-full flex flex-col justify-between p-2 lg:p-4">
               <div className="flex items-center justify-between ">
                 <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{card.title}</span>
                 <div className={`p-1.5 rounded-full ${bgColor} bg-opacity-50`}>

@@ -29,28 +29,48 @@ export type CreateHotelFormData = z.infer<typeof createHotelSchema>;
 
 export interface RoomType {
   id: number;
-  name?: string;
-  type_name?: string;
-  description: string;
+  type_code: string;
+  type_name: string;
+  description?: string;
+  max_adults: number;
+  max_children: number;
+  max_occupancy: number;
+  max_extra_beds: number;
   base_rate_hourly: number;
   base_rate_daily: number;
-  max_occupancy: number;
-  amenities: string[];
+  base_rate_weekly?: number;
+  base_rate_monthly?: number;
+  extra_bed_rate?: number;
+  extra_person_rate?: number;
+  child_rate?: number;
+  size_sqft?: number;
+  bed_type?: string;
+  bed_count?: number;
+  view_type?: string;
+  is_active: boolean;
+  firm_id: number;
+  branch_id?: number;
 }
 
 export interface Room {
   id: number;
-  tenantId: number;
-  hotelId: number;
+  tenant_id: number;
+  firm_id: number;
+  branch_id: number;
+  room_type_id: number;
   room_number: string;
-  roomTypeId: number;
-  floor: string;
+  floor_number: number;
+  block_name?: string;
   status: string;
+  condition: string;
+  is_accessible: boolean;
+  notes?: string;
   room_type_name?: string;
-  hotel_name?: string;
   firm_name?: string;
+  branch_name?: string;
   created_at: string;
   updated_at: string;
+  is_active: boolean;
 }
 
 export interface Guest {

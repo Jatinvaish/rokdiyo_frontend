@@ -21,6 +21,8 @@ export interface User {
   username: string;
   userType: string;
   tenantId: number | null;
+  firmId: number | null;
+  branchId: number | null;
   firstName: string | null;
   lastName: string | null;
   onboardingCompleted: boolean;
@@ -41,7 +43,7 @@ export const authService = {
   async login(data: LoginDto): Promise<LoginResponse> {
     try {
       const response = await apiClient.post<LoginResponse>(
-        API_ENDPOINTS.AUTH.LOGIN, 
+        API_ENDPOINTS.AUTH.LOGIN,
         data
       );
 
@@ -50,7 +52,7 @@ export const authService = {
         if (typeof window !== "undefined") {
           localStorage.setItem("accessToken", response.data.accessToken);
           localStorage.setItem("user", JSON.stringify(response.data.user));
-          
+
           // Also set cookie for middleware
           document.cookie = `accessToken=${response.data.accessToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         }
@@ -96,10 +98,10 @@ export const authService = {
       if (typeof window !== "undefined") {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("user");
-        
+
         // Clear cookie
         document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        
+
         // Redirect to sign-in
         window.location.href = "/sign-in";
       }
@@ -108,7 +110,7 @@ export const authService = {
 
   getUser(): User | null {
     if (typeof window === "undefined") return null;
-    
+
     const user = localStorage.getItem("user");
     return user ? JSON.parse(user) : null;
   },

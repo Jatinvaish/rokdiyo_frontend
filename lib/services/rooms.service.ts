@@ -3,22 +3,39 @@ import { API_ENDPOINTS } from "../api/config";
 import { ApiResponse, Room, PaginatedResponse, RoomType } from "../types/hotel";
 
 export interface CreateRoomTypeDto {
-  name: string;
+  type_code?: string;
+  type_name: string;
   description?: string;
+  max_adults: number;
+  max_children: number;
+  max_occupancy: number;
+  max_extra_beds: number;
   base_rate_hourly: number;
   base_rate_daily: number;
-  max_occupancy: number;
-  amenities?: string[];
+  base_rate_weekly?: number;
+  base_rate_monthly?: number;
+  extra_bed_rate?: number;
+  extra_person_rate?: number;
+  child_rate?: number;
+  size_sqft?: number;
+  bed_type?: string;
+  bed_count?: number;
+  view_type?: string;
 }
 
 export interface CreateRoomDto {
-  hotel_id: number;
-  room_number: string;
+  firm_id: number;
+  branch_id: number;
   room_type_id: number;
-  floor: string;
-  capacity: number;
-  description?: string;
+  room_number: string;
+  floor_number: number;
+  block_name?: string;
+  status?: string;
+  condition?: string;
+  is_accessible?: boolean;
+  notes?: string;
 }
+
 
 export const roomService = {
   async createType(data: CreateRoomTypeDto): Promise<RoomType> {
@@ -68,12 +85,13 @@ export const roomService = {
   },
 
   async bulkCreate(data: {
-    hotel_id: number;
+    firm_id: number;
+    branch_id: number;
     room_number_prefix: string;
     start_number: number;
     end_number: number;
     room_type_id: number;
-    floor: string;
+    floor_number: number;
   }): Promise<{ created_count: number; rooms: Room[] }> {
     try {
       const response = await apiClient.post<ApiResponse<{ created_count: number; rooms: Room[] }>>(
