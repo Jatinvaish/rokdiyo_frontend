@@ -21,9 +21,9 @@ import { Combobox } from '@/components/ui/custom/combobox';
 
 const roomSchema = z.object({
   room_number: z.string().min(1, 'Room number is required'),
-  room_type_id: z.coerce.number().min(1, 'Room type is required'),
-  floor: z.coerce.number().min(0, 'Floor is required'),
-  status: z.enum(['available', 'occupied', 'cleaning', 'maintenance', 'advance']).default('available'),
+  room_type_id: z.number().min(1, 'Room type is required'),
+  floor: z.number().min(0, 'Floor is required'),
+  status: z.enum(['available', 'occupied', 'cleaning', 'maintenance', 'advance']),
   description: z.string().optional(),
 });
 
@@ -142,7 +142,7 @@ export function AddRoomModal({ hotelId, open, onOpenChange, onSuccess, initialDa
                   id="floor"
                   type="number"
                   placeholder="1"
-                  {...form.register('floor')}
+                  {...form.register('floor', { valueAsNumber: true })}
                 />
                 {form.formState.errors.floor && (
                   <p className="text-sm text-destructive">{form.formState.errors.floor.message}</p>

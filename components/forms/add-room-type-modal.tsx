@@ -22,9 +22,9 @@ import { roomService } from '@/lib/services/rooms.service';
 const roomTypeSchema = z.object({
   name: z.string().min(2, 'Room type name must be at least 2 characters'),
   description: z.string().min(5, 'Description must be at least 5 characters'),
-  base_rate_hourly: z.coerce.number().min(0, 'Hourly rate must be at least 0'),
-  base_rate_daily: z.coerce.number().min(0, 'Daily rate must be at least 0'),
-  max_occupancy: z.coerce.number().min(1, 'Max occupancy must be at least 1'),
+  base_rate_hourly: z.number().min(0, 'Hourly rate must be at least 0'),
+  base_rate_daily: z.number().min(0, 'Daily rate must be at least 0'),
+  max_occupancy: z.number().min(1, 'Max occupancy must be at least 1'),
   amenities: z.string().optional(),
 });
 
@@ -61,7 +61,7 @@ export function AddRoomTypeModal({ open, onOpenChange, onSuccess, initialData }:
         base_rate_hourly: initialData.base_rate_hourly || 0,
         base_rate_daily: initialData.base_rate_daily || 0,
         max_occupancy: initialData.max_occupancy || 2,
-        amenities: initialData.amenities || '',
+        amenities: Array.isArray(initialData.amenities) ? initialData.amenities.join(', ') : initialData.amenities || '',
       });
     } else {
       form.reset({
@@ -78,11 +78,16 @@ export function AddRoomTypeModal({ open, onOpenChange, onSuccess, initialData }:
   const onSubmit = async (data: RoomTypeFormData) => {
     setIsSubmitting(true);
     try {
+      const payload = {
+        ...data,
+        amenities: data.amenities ? data.amenities.split(',').map(s => s.trim()) : []
+      };
+
       if (isEditMode) {
-        await roomService.updateType(initialData.id, data);
+        await roomService.updateType(initialData.id, payload as any);
         toast.success('Room type updated successfully');
       } else {
-        await roomService.createType(data);
+        await roomService.createType(payload as any);
         toast.success('Room type created successfully');
       }
       form.reset();
@@ -139,7 +144,7 @@ export function AddRoomTypeModal({ open, onOpenChange, onSuccess, initialData }:
                   id="base_rate_hourly"
                   type="number"
                   placeholder="500"
-                  {...form.register('base_rate_hourly')}
+                  {...form.register('base_rate_hourly', { valueAsNumber: true })}
                 />
                 {form.formState.errors.base_rate_hourly && (
                   <p className="text-sm text-destructive">{form.formState.errors.base_rate_hourly.message}</p>
@@ -152,7 +157,7 @@ export function AddRoomTypeModal({ open, onOpenChange, onSuccess, initialData }:
                   id="base_rate_daily"
                   type="number"
                   placeholder="2000"
-                  {...form.register('base_rate_daily')}
+                  {...form.register('base_rate_daily', { valueAsNumber: true })}
                 />
                 {form.formState.errors.base_rate_daily && (
                   <p className="text-sm text-destructive">{form.formState.errors.base_rate_daily.message}</p>
@@ -167,7 +172,7 @@ export function AddRoomTypeModal({ open, onOpenChange, onSuccess, initialData }:
                   id="max_occupancy"
                   type="number"
                   placeholder="2"
-                  {...form.register('max_occupancy')}
+                  {...form.register('max_occupancy', { valueAsNumber: true })}
                 />
                 {form.formState.errors.max_occupancy && (
                   <p className="text-sm text-destructive">{form.formState.errors.max_occupancy.message}</p>

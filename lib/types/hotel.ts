@@ -29,7 +29,8 @@ export type CreateHotelFormData = z.infer<typeof createHotelSchema>;
 
 export interface RoomType {
   id: number;
-  name: string;
+  name?: string;
+  type_name?: string;
   description: string;
   base_rate_hourly: number;
   base_rate_daily: number;

@@ -31,7 +31,7 @@ export default function RoomsPage() {
         roomService.listTypes(),
         hotelService.list(),
       ]);
-      setRooms(roomsData as any);
+      setRooms((roomsData as any).data || []);
       setRoomTypes(typesData as any);
       setHotels(hotelsData as any);
     } catch (error) {

@@ -22,15 +22,15 @@ import { bookingService } from '@/lib/services/bookings.service';
 import { Combobox } from '@/components/ui/custom/combobox';
 
 const bookingSchema = z.object({
-  guest_id: z.coerce.number().min(1, 'Guest is required'),
-  room_id: z.coerce.number().min(1, 'Room is required'),
+  guest_id: z.number().min(1, 'Guest is required'),
+  room_id: z.number().min(1, 'Room is required'),
   booking_type: z.enum(['hourly', 'daily', 'advance']),
   check_in: z.string().min(1, 'Check-in date/time is required'),
   check_out: z.string().optional(),
-  hours: z.coerce.number().min(1).optional(),
-  nights: z.coerce.number().min(1).optional(),
-  adults: z.coerce.number().min(1, 'At least 1 adult required'),
-  children: z.coerce.number().min(0).optional(),
+  hours: z.number().min(1).optional(),
+  nights: z.number().min(1).optional(),
+  adults: z.number().min(1, 'At least 1 adult required'),
+  children: z.number().min(0).optional(),
   special_requests: z.string().optional(),
 });
 
@@ -216,7 +216,9 @@ export function CreateBookingModal({
                   id="duration"
                   type="number"
                   min="1"
-                  {...form.register(bookingType === 'hourly' ? 'hours' : 'nights')}
+                  {...form.register(bookingType === 'hourly' ? 'hours' : 'nights', {
+                    valueAsNumber: true
+                  })}
                 />
               </div>
             </div>
@@ -229,7 +231,7 @@ export function CreateBookingModal({
                   type="number"
                   min="1"
                   placeholder="1"
-                  {...form.register('adults')}
+                  {...form.register('adults', { valueAsNumber: true })}
                 />
                 {form.formState.errors.adults && (
                   <p className="text-sm text-destructive">{form.formState.errors.adults.message}</p>
@@ -243,7 +245,7 @@ export function CreateBookingModal({
                   type="number"
                   min="0"
                   placeholder="0"
-                  {...form.register('children')}
+                  {...form.register('children', { valueAsNumber: true })}
                 />
               </div>
             </div>
