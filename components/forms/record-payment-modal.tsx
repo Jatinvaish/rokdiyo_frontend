@@ -20,7 +20,7 @@ import { bookingService } from '@/lib/services/bookings.service';
 import { Combobox } from '@/components/ui/custom/combobox';
 
 const paymentSchema = z.object({
-  amount: z.coerce.number().min(0.01, 'Amount must be greater than 0'),
+  amount: z.number().min(0.01, 'Amount must be greater than 0'),
   payment_method: z.enum(['cash', 'card', 'transfer']),
   reference_number: z.string().optional(),
 });

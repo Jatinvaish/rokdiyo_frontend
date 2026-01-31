@@ -1,0 +1,204 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { usePermissions } from '@/hooks/usePermissions'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
+
+interface RouteGuardProps {
+  permission?: string | string[]
+  fallback?: string
+  requireAll?: boolean // If true, requires all permissions (AND logic), if false, requires any (OR logic)
+  checkMenuAccess?: boolean // Additional check for menu-based access control
+  children: React.ReactNode
+}
+
+export function RouteGuard({ 
+  permission, 
+  fallback = '/dashboard', 
+  requireAll = false,
+  checkMenuAccess = true,
+  children 
+}: RouteGuardProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const { hasPermission, isSuperAdmin, hasMenuAccess, loading } = usePermissions()
+  const [isChecking, setIsChecking] = useState(true)
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      setIsChecking(true)
+      
+      try {
+        // Super admin bypasses all permission checks
+        if (isSuperAdmin()) {
+          setIsChecking(false)
+          return
+        }
+
+        let hasAccess = true
+
+        // Check explicit permissions if provided
+        if (permission) {
+          if (Array.isArray(permission)) {
+            hasAccess = requireAll 
+              ? permission.every(p => hasPermission(p)) // AND logic
+              : permission.some(p => hasPermission(p))  // OR logic
+          } else {
+            hasAccess = hasPermission(permission)
+          }
+        }
+
+        // Additional menu access check if enabled
+        if (hasAccess && checkMenuAccess) {
+          const menuKey = pathname.replace('/dashboard/', '').replace(/\//g, '_')
+          const menuAccess = await hasMenuAccess(menuKey)
+          
+          // If menu access check fails but explicit permission check passed, 
+          // it might be a route without menu configuration
+          if (menuAccess === false && permission) {
+            console.warn(`Route ${pathname} has permission check but no menu access for ${menuKey}`)
+          }
+          
+          hasAccess = hasAccess && (menuAccess !== false)
+        }
+
+        if (!hasAccess) {
+          console.warn(`Access denied to ${pathname}. Required permissions:`, permission)
+          toast.error('You do not have permission to access this page')
+          router.push(fallback)
+        }
+      } catch (error) {
+        console.error('Error checking route access:', error)
+        toast.error('Error verifying access permissions')
+        router.push(fallback)
+      } finally {
+        setIsChecking(false)
+      }
+    }
+
+    if (!loading) {
+      checkAccess()
+    }
+  }, [permission, requireAll, checkMenuAccess, pathname, fallback, router, hasPermission, isSuperAdmin, hasMenuAccess, loading])
+
+  // Show loading state while checking permissions
+  if (loading || isChecking) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Verifying access permissions...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return <>{children}</>
+}
+
+// Higher-order component for easier route protection
+export function withRouteGuard<P extends object>(
+  Component: React.ComponentType<P>,
+  options: Omit<RouteGuardProps, 'children'>
+) {
+  return function ProtectedComponent(props: P) {
+    return (
+      <RouteGuard {...options}>
+        <Component {...props} />
+      </RouteGuard>
+    )
+  }
+}
+
+// Specific route guards for common patterns
+export function AdminRoute({ children, fallback = '/dashboard' }: { children: React.ReactNode; fallback?: string }) {
+  return (
+    <RouteGuard 
+      permission={['manage_users', 'manage_roles']} 
+      fallback={fallback}
+      requireAll={false}
+    >
+      {children}
+    </RouteGuard>
+  )
+}
+
+export function ManagementRoute({ children, fallback = '/dashboard' }: { children: React.ReactNode; fallback?: string }) {
+  return (
+    <RouteGuard 
+      permission={['manage_bookings', 'manage_rooms', 'manage_guests']} 
+      fallback={fallback}
+      requireAll={false}
+    >
+      {children}
+    </RouteGuard>
+  )
+}
+
+export function TenantAdminRoute({ children, fallback = '/dashboard' }: { children: React.ReactNode; fallback?: string }) {
+  return (
+    <RouteGuard 
+      permission={['manage_users', 'manage_roles', 'manage_settings']} 
+      fallback={fallback}
+      requireAll={false}
+      checkMenuAccess={true}
+    >
+      {children}
+    </RouteGuard>
+  )
+}
+      }
+    }
+
+    // Redirect if no access
+    if (!hasAccess) {
+      toast.error('You do not have permission to access this page')
+      router.push(fallback)
+    }
+  }, [permission, fallback, hasPermission, isSuperAdmin, router])
+
+  // Super admin always has access
+  if (isSuperAdmin()) {
+    return <>{children}</>
+  }
+
+  // Check permissions for non-super admin
+  if (permission) {
+    let hasAccess = true
+    if (Array.isArray(permission)) {
+      hasAccess = permission.some(p => hasPermission(p))
+    } else {
+      hasAccess = hasPermission(permission)
+    }
+
+    if (!hasAccess) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+            <p className="text-muted-foreground">You don't have permission to access this page.</p>
+          </div>
+        </div>
+      )
+    }
+  }
+
+  return <>{children}</>
+}
+
+// HOC for page-level protection
+export function withRouteGuard<P extends object>(
+  Component: React.ComponentType<P>,
+  permission?: string | string[],
+  fallback?: string
+) {
+  return function GuardedComponent(props: P) {
+    return (
+      <RouteGuard permission={permission} fallback={fallback}>
+        <Component {...props} />
+      </RouteGuard>
+    )
+  }
+}

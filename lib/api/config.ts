@@ -98,4 +98,73 @@ export const API_ENDPOINTS = {
     DATABASES: "/health/databases",
     DETAILED: "/health/detailed",
   },
+
+  // Master Data Management
+  MASTER: {
+    FIRMS: {
+      BY_TENANT: "/master/firms/by-tenant",
+      GET: (id: number) => `/master/firms/${id}`,
+      CREATE: "/master/firms/create",
+      UPDATE: (id: number) => `/master/firms/${id}`,
+      DELETE: (id: number) => `/master/firms/${id}`,
+    },
+    BRANCHES: {
+      BY_TENANT: "/master/branches/by-tenant",
+      BY_FIRM: "/master/branches/by-firm",
+      GET: (id: number) => `/master/branches/${id}`,
+      CREATE: "/master/branches/create",
+      UPDATE: (id: number) => `/master/branches/${id}`,
+      DELETE: (id: number) => `/master/branches/${id}`,
+    },
+  },
+
+  // Access Control & RBAC
+  ACCESS_CONTROL: {
+    ROLES: {
+      CREATE: "/access-control/roles/create",
+      LIST: "/access-control/roles/list",
+      UPDATE: "/access-control/roles/update",
+      DELETE: "/access-control/roles/delete",
+      CLONE: "/access-control/roles/clone",
+    },
+    PERMISSIONS: {
+      CREATE: "/access-control/permissions/create",
+      LIST: "/access-control/permissions/list",
+      UPDATE: "/access-control/permissions/update",
+      DELETE: "/access-control/permissions/delete",
+    },
+    ROLE_PERMISSIONS: {
+      ASSIGN: "/access-control/role-permissions/assign",
+      LIST: "/access-control/role-permissions/list",
+    },
+    MENU_PERMISSIONS: {
+      CREATE: "/access-control/menu-permissions/create",
+      LIST: "/access-control/menu-permissions/list",
+      UPDATE: "/access-control/menu-permissions/update",
+      DELETE: "/access-control/menu-permissions/delete",
+    },
+    EFFECTIVE_PERMISSIONS: "/access-control/effective-permissions",
+  },
+
+  // Subscription Management
+  SUBSCRIPTIONS: {
+    PLANS: {
+      LIST: "/subscriptions/plans/list",
+      CREATE: "/subscriptions/plans/create",
+      GET: (id: number) => `/subscriptions/plans/${id}`,
+      UPDATE: (id: number) => `/subscriptions/plans/${id}`,
+      DELETE: (id: number) => `/subscriptions/plans/${id}`,
+    },
+    FEATURES: {
+      LIST: (planId: number) => `/subscriptions/features/${planId}`,
+      CREATE: "/subscriptions/features/create",
+      UPDATE: (id: number) => `/subscriptions/features/${id}`,
+      DELETE: (id: number) => `/subscriptions/features/${id}`,
+    },
+    FEATURE_PERMISSIONS: {
+      ASSIGN: "/subscriptions/feature-permissions/assign",
+    },
+    EFFECTIVE_PERMISSIONS: "/subscriptions/effective-permissions",
+    SUBSCRIPTION_PERMISSIONS: "/subscriptions/subscription-permissions",
+  },
 };

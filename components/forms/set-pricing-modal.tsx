@@ -20,10 +20,10 @@ import { Combobox } from '@/components/ui/custom/combobox';
 
 const pricingSchema = z.object({
   room_type: z.enum(['single', 'double', 'suite', 'deluxe', 'penthouse']),
-  base_price: z.coerce.number().min(1, 'Base price is required'),
-  weekend_price: z.coerce.number().optional(),
-  holiday_price: z.coerce.number().optional(),
-  seasonal_multiplier: z.coerce.number().optional(),
+  base_price: z.number().min(1, 'Base price is required'),
+  weekend_price: z.number().optional(),
+  holiday_price: z.number().optional(),
+  seasonal_multiplier: z.number().optional(),
 });
 
 type PricingFormData = z.infer<typeof pricingSchema>;

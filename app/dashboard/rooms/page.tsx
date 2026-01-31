@@ -20,6 +20,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { RouteGuard } from '@/components/guards/route-guard';
+import { PermissionGuard } from '@/hooks/usePermissions';
 import {
   Settings,
   Bed,
@@ -172,62 +174,61 @@ export default function RoomsPage() {
   }
 
   return (
-    <div className="space-y-6   animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-bold tracking-tight">Room Management</h1>
-          <p className="text-muted-foreground text-xs flex items-center gap-2">
-            Real-time accommodation status
-            <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/40"></span>
-            Last sync: {new Date().toLocaleTimeString()}
-          </p>
+    <RouteGuard permission="rooms.read">
+      <div className="space-y-6   animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-bold tracking-tight">Room Management</h1>
+            <p className="text-muted-foreground text-xs flex items-center gap-2">
+              Real-time accommodation status
+              <span className="inline-block w-1 h-1 rounded-full bg-muted-foreground/40"></span>
+              Last sync: {new Date().toLocaleTimeString()}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative group flex-1 min-w-[240px]">
+              <InputGroup className="border-muted/30 h-9">
+                <InputGroupAddon>
+                  <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput
+                  placeholder="Find room..."
+                  value={search}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                  className="bg-transparent text-sm"
+                />
+              </InputGroup>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => loadData(search)}
+                disabled={refreshing}
+                className={`h-9 w-9 ${refreshing ? 'animate-spin' : ''}`}
+              >
+                <RefreshCcw className="h-3.5 w-3.5" />
+              </Button>
+              <PermissionGuard permission="rooms.create">
+                <Button variant="outline" size="sm" onClick={() => { setSelectedRoomType(null); setTypeDialogOpen(true); }} className="h-9 gap-2">
+                  <Settings className="h-3.5 w-3.5" />
+                  Types
+                </Button>
+                <Button size="sm" onClick={() => { setSelectedRoom(null); setRoomDialogOpen(true); }} className="h-9 gap-2">
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Room
+                </Button>
+              </PermissionGuard>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative group flex-1 min-w-[240px]">
-            <InputGroup className="border-muted/30 h-9">
-              <InputGroupAddon>
-                <Search className="w-3.5 h-3.5 text-muted-foreground" />
-              </InputGroupAddon>
-              <InputGroupInput
-                placeholder="Find room..."
-                value={search}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-                className="bg-transparent text-sm"
-              />
-            </InputGroup>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => loadData(search)}
-              disabled={refreshing}
-              className={`h-9 w-9 ${refreshing ? 'animate-spin' : ''}`}
-            >
-              <RefreshCcw className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" size="sm" className="h-9 gap-2">
-              <Download className="h-3.5 w-3.5" />
-              Export
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => { setSelectedRoomType(null); setTypeDialogOpen(true); }} className="h-9 gap-2">
-              <Settings className="h-3.5 w-3.5" />
-              Types
-            </Button>
-            <Button size="sm" onClick={() => { setSelectedRoom(null); setRoomDialogOpen(true); }} className="h-9 gap-2">
-              <Plus className="h-3.5 w-3.5" />
-              Add Room
-            </Button>
-          </div>
-        </div>
-      </div>
+        {/* Quick Stats Grid */}
+        <DynamicSummaryCards cards={summaryCards} />
 
-      {/* Quick Stats Grid */}
-      <DynamicSummaryCards cards={summaryCards} />
-
-      <Tabs defaultValue="rooms" className="w-full space-y-4">
+        <Tabs defaultValue="rooms" className="w-full space-y-4">
         <div className="flex items-center justify-between">
           <TabsList className="grid w-full grid-cols-2 mb-2">
             <TabsTrigger
@@ -349,6 +350,7 @@ export default function RoomsPage() {
         onSuccess={loadData}
         initialData={selectedRoom}
       />
-    </div>
+      </div>
+    </RouteGuard>
   );
 }

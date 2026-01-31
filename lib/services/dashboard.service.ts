@@ -108,7 +108,7 @@ export const dashboardService = {
         API_ENDPOINTS.DASHBOARD.BRANCH_COMPARISON,
         filters || {}
       );
-      return response.data;
+      return (response as any).data;
     } catch (error: any) {
       console.error("Get branch comparison failed:", error);
       throw new Error(error.message || "Failed to get branch comparison");

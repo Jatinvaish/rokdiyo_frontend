@@ -12,10 +12,11 @@ import {
   SidebarMenuItem,
   useSidebar
 } from "@/components/ui/sidebar";
-import { NavMain } from "@/components/layout/sidebar/nav-main";
+import { NavMainMinimal } from "@/components/layout/sidebar/nav-main-minimal";
 import { NavUser } from "@/components/layout/sidebar/nav-user";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Logo from "@/components/layout/logo";
+import { NavMainDynamic } from "./nav-main-dynamic";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -47,14 +48,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       {/* CONTENT */}
-      <SidebarContent className="border-b">
+      <SidebarContent className="m-0 p-0">
         <ScrollArea className="h-full px-1 py-2">
-          <NavMain />
+          <NavMainDynamic />
         </ScrollArea>
       </SidebarContent>
 
       {/* FOOTER */}
-      <SidebarFooter className="pt-2">
+      <SidebarFooter className="m-0 p-0">
         <NavUser />
       </SidebarFooter>
 
