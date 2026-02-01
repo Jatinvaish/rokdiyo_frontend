@@ -100,7 +100,7 @@ export function CreateRoleModal({ open, onClose, onSuccess, role }: CreateRoleMo
         })
       }
     }
-  }, [role, form, open, isCloneMode, user])
+  }, [role, open, isCloneMode, user?.tenantId])
 
   const onSubmit = async (data: RoleFormData) => {
     setLoading(true)

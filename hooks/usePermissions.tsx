@@ -1,13 +1,6 @@
 import { useState, useEffect, useContext, createContext, ReactNode } from 'react'
-
-interface Permission {
-  id: number
-  permission_key: string
-  resource: string
-  action: string
-  description?: string
-  category: string
-}
+import { AccessControlService } from '@/lib/services/access-control.service'
+import { Permission } from '@/lib/types/rbac'
 
 interface User {
   id: number
@@ -90,21 +83,17 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
 
       setUser(currentUser)
 
-      // Fetch permissions from API
-      const response = await fetch('/api/access-control/effective-permissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: currentUser.id })
-      })
+      // Fetch permissions from backend service
+      console.log('🔍 DEBUG: Fetching permissions for user:', currentUser);
+      const response = await AccessControlService.getEffectivePermissions();
+      console.log('🔍 DEBUG: Permissions response:', response);
       
-      if (response.ok) {
-        const data = await response.json()
-        // Handle different response formats
-        const permissionsData = Array.isArray(data) ? data : (data?.permissions || data?.data || [])
-        setPermissions(permissionsData)
+      if (response.success && response.data) {
+        console.log('🔍 DEBUG: Permissions loaded:', response.data.length);
+        setPermissions(response.data);
       } else {
-        console.warn('Failed to fetch permissions, using empty array')
-        setPermissions([])
+        console.warn('🔍 DEBUG: Failed to fetch permissions, response:', response);
+        setPermissions([]);
       }
     } catch (error) {
       console.error('Failed to fetch permissions:', error)

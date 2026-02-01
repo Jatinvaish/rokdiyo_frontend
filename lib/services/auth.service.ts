@@ -1,6 +1,7 @@
 // lib/services/auth.service.ts
 import { apiClient } from "../api/client";
 import { API_ENDPOINTS } from "../api/config";
+import { useAuthStore } from "../store/auth.store";
 
 export interface LoginDto {
   identifier: string;
@@ -53,6 +54,8 @@ export const authService = {
           localStorage.setItem("accessToken", response.data.accessToken);
           localStorage.setItem("user", JSON.stringify(response.data.user));
 
+          useAuthStore.getState().setUser(response.data.user);
+
           // Also set cookie for middleware
           document.cookie = `accessToken=${response.data.accessToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         }
@@ -96,6 +99,7 @@ export const authService = {
     } finally {
       // Always clear client-side data
       if (typeof window !== "undefined") {
+        useAuthStore.getState().clearUser();
         localStorage.removeItem("accessToken");
         localStorage.removeItem("user");
 

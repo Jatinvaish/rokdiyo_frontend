@@ -23,6 +23,8 @@ class EncryptedApiClient {
 
   private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
     try {
+      console.log('🔍 DEBUG: API Request:', `${this.baseUrl}${url}`, options.method || 'GET');
+      
       const isFormData = options.body instanceof FormData;
       // Only encrypt non-GET requests and non-FormData
       const isEncrypted = this.encryptionEnabled && options.method !== "GET" && !isFormData;
@@ -33,24 +35,31 @@ class EncryptedApiClient {
       }
 
       const headers: any = { ...this.getHeaders(isEncrypted), ...options.headers };
+      console.log('🔍 DEBUG: Request headers:', headers);
+      
       if (isFormData) {
         // fetch will automatically set the boundary if Content-Type is not set
         delete headers["Content-Type"];
       }
 
+      console.log('🔍 DEBUG: Full URL:', `${this.baseUrl}${url}`);
       const res = await fetch(`${this.baseUrl}${url}`, {
         ...options,
         headers,
       });
 
+      console.log('🔍 DEBUG: Response status:', res.status, res.statusText);
+
       if (!res.ok) {
         const error = await res.json().catch(() => ({
           message: `HTTP ${res.status}: ${res.statusText}`
         }));
+        console.error('🔍 DEBUG: API Error response:', error);
         throw new Error(error.message || `Request failed with status ${res.status}`);
       }
 
       const data = await res.json();
+      console.log('🔍 DEBUG: API Response data:', data);
 
       // Check if response is encrypted
       if (data.__payload && data.__checksum) {

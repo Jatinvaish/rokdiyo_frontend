@@ -25,6 +25,8 @@ import { AccessControlService, Role } from '@/lib/services/access-control.servic
 import { PermissionGuard, usePermissions } from '@/hooks/usePermissions'
 import { CreateRoleModal } from './create-role-modal'
 import { AssignPermissionsModal } from './assign-permissions-modal'
+import { useAuthStore } from '@/lib/store/auth.store'
+import Link from 'next/link'
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([])
@@ -36,17 +38,17 @@ export default function RolesPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [loadDataTimer, setLoadDataTimer] = useState<any>(null)
   const { hasPermission } = usePermissions()
+  const { user } = useAuthStore()
 
   // Create a stable debounced function using useCallback
   const debouncedLoadData = useCallback(
     (searchQuery: string) => {
-      if (loadDataTimer) clearTimeout(loadDataTimer)
       const timer = setTimeout(() => {
         loadData(searchQuery)
       }, 500)
-      setLoadDataTimer(timer)
+      return timer
     },
-    [loadDataTimer]
+    [] // Remove loadDataTimer from dependencies
   )
 
   useEffect(() => {
@@ -55,19 +57,24 @@ export default function RolesPage() {
 
   useEffect(() => {
     if (search.length > 0) {
-      debouncedLoadData(search)
+      const timer = debouncedLoadData(search)
+      setLoadDataTimer(timer)
+      return () => {
+        if (timer) clearTimeout(timer)
+      }
+    } else {
+      loadData()
     }
-    return () => {
-      if (loadDataTimer) clearTimeout(loadDataTimer)
-    }
-  }, [search, debouncedLoadData, loadDataTimer])
+  }, [search, debouncedLoadData])
 
   const loadData = async (searchQuery?: string) => {
     if (roles.length > 0) setRefreshing(true)
     try {
+      console.log('Loading roles with search:', searchQuery)
       const response = await AccessControlService.getRoles({ search: searchQuery })
+      console.log('Roles response:', response)
       // Ensure roles is always an array
-      const rolesData = Array.isArray(response) ? response : []
+      const rolesData = Array.isArray(response) ? response : (response.data || [])
       setRoles(rolesData)
     } catch (error) {
       console.error('Failed to load roles:', error)
@@ -159,6 +166,14 @@ export default function RolesPage() {
                 Create Role
               </Button>
             </PermissionGuard>
+            {user?.userType === 'SUPER_ADMIN' && (
+              <Link href="/dashboard/access-control/roles/assign-permissions">
+                <Button variant="outline" className="h-9">
+                  <Shield className="w-3.5 h-3.5 mr-2" />
+                  Assign Permissions
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 

@@ -16,13 +16,16 @@ import {
   XCircle,
   AlertCircle,
   RefreshCcw,
-  Settings
+  Settings,
+  ArrowLeft
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { CommonLoading } from '@/components/ui/common-loading'
 import { AccessControlService, Permission } from '@/lib/services/access-control.service'
 import { PermissionGuard, usePermissions } from '@/hooks/usePermissions'
 import { CreatePermissionModal } from './create-permission-modal'
+import { useAuthStore } from '@/lib/store/auth.store'
+import Link from 'next/link'
 
 export default function PermissionsPage() {
   const [permissions, setPermissions] = useState<Permission[]>([])
@@ -34,19 +37,22 @@ export default function PermissionsPage() {
   const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null)
   const [loadDataTimer, setLoadDataTimer] = useState<any>(null)
   const { hasPermission } = usePermissions()
+  const { user } = useAuthStore()
 
   useEffect(() => {
     loadData()
   }, [])
 
   useEffect(() => {
-    if (search.length > 0 || permissions.length > 0 || selectedCategory) {
+    if (search.length > 0 || selectedCategory) {
       if (loadDataTimer) clearTimeout(loadDataTimer)
       const timer = setTimeout(() => {
         loadData(search, selectedCategory)
       }, 500)
       setLoadDataTimer(timer)
       return () => clearTimeout(timer)
+    } else {
+      loadData()
     }
   }, [search, selectedCategory])
 
@@ -118,8 +124,27 @@ export default function PermissionsPage() {
     return matchesSearch && matchesCategory
   })
 
-  if (loading && permissions.length === 0) {
+  if (loading) {
     return <CommonLoading message="Loading permissions..." />
+  }
+
+  // Only allow super_admin to access this page
+  if (user?.userType !== 'SUPER_ADMIN') {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="text-center">
+          <Shield className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+          <p className="text-muted-foreground">Only Super Admin can access permission management.</p>
+          <Link href="/dashboard/access-control">
+            <Button className="mt-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Access Control
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (

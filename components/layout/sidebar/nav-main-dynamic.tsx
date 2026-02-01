@@ -85,8 +85,10 @@ export function NavMainDynamic() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUserMenus();
-  }, [user]);
+    if (user?.id) {
+      loadUserMenus();
+    }
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   const loadUserMenus = async () => {
     if (!user?.id) return;
@@ -99,9 +101,12 @@ export function NavMainDynamic() {
         // Organize menus into hierarchy
         const organizedMenus = organizeMenus(response.data);
         setMenus(organizedMenus);
+      } else {
+        setMenus([]);
       }
     } catch (error) {
       console.error('Failed to load user menus:', error);
+      setMenus([]);
     } finally {
       setLoading(false);
     }

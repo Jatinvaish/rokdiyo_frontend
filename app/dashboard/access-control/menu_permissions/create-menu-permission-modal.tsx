@@ -126,7 +126,7 @@ export function CreateMenuPermissionModal({ open, onClose, onSuccess, menuPermis
         })
       }
     }
-  }, [menuPermission, form, open, user])
+  }, [menuPermission, open, user?.tenantId, user?.firmId, user?.branchId])
 
   const loadFirms = async () => {
     try {
@@ -202,13 +202,13 @@ export function CreateMenuPermissionModal({ open, onClose, onSuccess, menuPermis
       form.setValue('firm_id', firms[0].id)
       loadBranches(firms[0].id)
     }
-  }, [firms, shouldAutoSelectFirm, form])
+  }, [firms, shouldAutoSelectFirm])
 
   useEffect(() => {
     if (shouldAutoSelectBranch && branches[0]) {
       form.setValue('branch_id', branches[0].id)
     }
-  }, [branches, shouldAutoSelectBranch, form])
+  }, [branches, shouldAutoSelectBranch])
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -305,7 +305,7 @@ export function CreateMenuPermissionModal({ open, onClose, onSuccess, menuPermis
                   <SelectValue placeholder="Select icon" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No icon</SelectItem>
+                  <SelectItem value="none">No icon</SelectItem>
                   {commonIcons.map((icon) => (
                     <SelectItem key={icon} value={icon}>
                       {icon}
@@ -382,7 +382,7 @@ export function CreateMenuPermissionModal({ open, onClose, onSuccess, menuPermis
                   <SelectValue placeholder="Select firm" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No firm restriction</SelectItem>
+                  <SelectItem value="all">No firm restriction</SelectItem>
                   {firms.map((firm) => (
                     <SelectItem key={firm.id} value={firm.id.toString()}>
                       {firm.firm_name}
@@ -407,7 +407,7 @@ export function CreateMenuPermissionModal({ open, onClose, onSuccess, menuPermis
                   <SelectValue placeholder="Select branch" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No branch restriction</SelectItem>
+                  <SelectItem value="all">No branch restriction</SelectItem>
                   {branches.map((branch) => (
                     <SelectItem key={branch.id} value={branch.id.toString()}>
                       {branch.branch_name}

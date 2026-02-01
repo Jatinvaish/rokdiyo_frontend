@@ -174,7 +174,7 @@ export default function RoomsPage() {
   }
 
   return (
-    <RouteGuard permission="rooms.read">
+    <RouteGuard permission="view_rooms">
       <div className="space-y-6   animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -211,7 +211,7 @@ export default function RoomsPage() {
               >
                 <RefreshCcw className="h-3.5 w-3.5" />
               </Button>
-              <PermissionGuard permission="rooms.create">
+              <PermissionGuard permission="manage_rooms">
                 <Button variant="outline" size="sm" onClick={() => { setSelectedRoomType(null); setTypeDialogOpen(true); }} className="h-9 gap-2">
                   <Settings className="h-3.5 w-3.5" />
                   Types

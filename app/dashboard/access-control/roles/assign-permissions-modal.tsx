@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { Loader2, Shield, CheckCircle } from 'lucide-react'
 import AccessControlService from '@/lib/services/access-control.service'
 import { Role, Permission } from '@/lib/types/rbac'
+import { useAuthStore } from '@/lib/store/auth.store'
 
 interface AssignPermissionsModalProps {
   open: boolean
@@ -30,6 +31,7 @@ export function AssignPermissionsModal({ open, onClose, role, onSuccess }: Assig
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
   const [loadingPermissions, setLoadingPermissions] = useState(true)
+  const { user } = useAuthStore()
 
   useEffect(() => {
     if (open && role) {
@@ -40,24 +42,63 @@ export function AssignPermissionsModal({ open, onClose, role, onSuccess }: Assig
   const loadPermissions = async () => {
     setLoadingPermissions(true)
     try {
-      const [subscriptionPerms, rolePerms] = await Promise.all([
-        SubscriptionService.getSubscriptionPermissions(),
-        AccessControlService.getRolePermissions({
-          role_id: role!.id,
-          include_subscription_permissions: true
-        })
-      ])
+      console.log('Loading permissions for role:', role?.id)
       
-      setPermissions(subscriptionPerms || [])
+      // Get subscription-based permissions for tenant users
+      let subscriptionPerms
+      try {
+        if (user?.userType === 'SUPER_ADMIN') {
+          // For super admin, get all permissions
+          subscriptionPerms = await AccessControlService.getPermissions({ include_system_permissions: true })
+          console.log('Super admin - all permissions response:', subscriptionPerms)
+        } else if (user?.tenantId) {
+          // For tenant users, get permissions based on subscription + role
+          subscriptionPerms = await AccessControlService.getUserPermissionsWithSubscription(user.id)
+          console.log('Tenant user - subscription permissions response:', subscriptionPerms)
+        } else {
+          // Fallback to regular permissions
+          subscriptionPerms = await AccessControlService.getPermissions({ include_system_permissions: true })
+          console.log('Fallback - all permissions response:', subscriptionPerms)
+        }
+      } catch (subError) {
+        console.log('Subscription permissions failed, trying regular permissions:', subError)
+        subscriptionPerms = await AccessControlService.getPermissions({ include_system_permissions: true })
+        console.log('Regular permissions response:', subscriptionPerms)
+      }
+      
+      const rolePerms = await AccessControlService.getRolePermissions({
+        role_id: role!.id,
+        include_subscription_permissions: true
+      })
+      console.log('Role permissions response:', rolePerms)
+      
+      // Extract data from API response format
+      const permissionsData = Array.isArray(subscriptionPerms) ? subscriptionPerms : ((subscriptionPerms as any)?.data || [])
+      console.log('Final permissions data:', permissionsData)
+      
+      // If still no permissions, try to get all permissions as fallback
+      if (permissionsData.length === 0) {
+        console.log('No permissions from subscription, trying all permissions as fallback')
+        const allPerms = await AccessControlService.getPermissions({ include_system_permissions: true })
+        const fallbackData = Array.isArray(allPerms) ? allPerms : ((allPerms as any)?.data || [])
+        console.log('Fallback permissions data:', fallbackData)
+        setPermissions(fallbackData)
+      } else {
+        setPermissions(permissionsData)
+      }
       
       // Set currently assigned permissions
-      const currentPermissionIds = (rolePerms.data || [])
+      const currentPermissionIds = ((rolePerms as any)?.data || [])
         .filter((p: any) => p.granted && p.status === 'active')
         .map((p: any) => p.id.toString())
+      console.log('Current permission IDs:', currentPermissionIds)
       setSelectedPermissions(currentPermissionIds)
     } catch (error) {
       console.error('Failed to load permissions:', error)
       toast.error('Failed to load permissions')
+      // Set empty array to prevent errors
+      setPermissions([])
+      setSelectedPermissions([])
     } finally {
       setLoadingPermissions(false)
     }
@@ -68,14 +109,24 @@ export function AssignPermissionsModal({ open, onClose, role, onSuccess }: Assig
     
     setLoading(true)
     try {
+      // Convert string IDs back to numbers for the backend
+      const permissionIdsAsNumbers = selectedPermissions.map(id => Number(id))
+      
+      console.log('Submitting permissions:', {
+        role_id: role.id,
+        permission_ids: permissionIdsAsNumbers,
+        original_selected_permissions: selectedPermissions
+      })
+      
       await AccessControlService.assignRolePermissions({
         role_id: role.id,
-        permission_ids: selectedPermissions
+        permission_ids: permissionIdsAsNumbers
       })
       toast.success('Permissions assigned successfully')
       onSuccess()
       onClose()
     } catch (error: any) {
+      console.error('Failed to assign permissions:', error)
       toast.error(error.message || 'Failed to assign permissions')
     } finally {
       setLoading(false)
@@ -111,7 +162,7 @@ export function AssignPermissionsModal({ open, onClose, role, onSuccess }: Assig
     }
   }
 
-  const groupedPermissions = permissions.reduce((acc, permission) => {
+  const groupedPermissions = (permissions || []).reduce((acc, permission) => {
     const category = permission.category || 'uncategorized'
     if (!acc[category]) {
       acc[category] = []
@@ -128,7 +179,7 @@ export function AssignPermissionsModal({ open, onClose, role, onSuccess }: Assig
   }
 
   const getCategorySelectedCount = (category: string) => {
-    const categoryPermissionIds = permissions
+    const categoryPermissionIds = (permissions || [])
       .filter(p => (p.category || 'uncategorized') === category)
       .map(p => p.id.toString())
     return categoryPermissionIds.filter(id => selectedPermissions.includes(id)).length

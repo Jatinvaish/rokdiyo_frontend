@@ -16,13 +16,17 @@ import {
   XCircle,
   AlertCircle,
   RefreshCcw,
-  Settings
+  Settings,
+  ArrowLeft,
+  Shield
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { CommonLoading } from '@/components/ui/common-loading'
 import { AccessControlService } from '@/lib/services/access-control.service'
 import { PermissionGuard, usePermissions } from '@/hooks/usePermissions'
 import { CreateMenuPermissionModal } from './create-menu-permission-modal'
+import { useAuthStore } from '@/lib/store/auth.store'
+import Link from 'next/link'
 
 export default function MenuPermissionsPage() {
   const [menuPermissions, setMenuPermissions] = useState<any[]>([])
@@ -33,29 +37,34 @@ export default function MenuPermissionsPage() {
   const [selectedMenuPermission, setSelectedMenuPermission] = useState<any>(null)
   const [loadDataTimer, setLoadDataTimer] = useState<any>(null)
   const { hasPermission } = usePermissions()
+  const { user } = useAuthStore()
 
   useEffect(() => {
     loadData()
   }, [])
 
   useEffect(() => {
-    if (search.length > 0 || menuPermissions.length > 0) {
+    if (search.length > 0) {
       if (loadDataTimer) clearTimeout(loadDataTimer)
       const timer = setTimeout(() => {
         loadData(search)
       }, 500)
       setLoadDataTimer(timer)
       return () => clearTimeout(timer)
+    } else {
+      loadData()
     }
   }, [search])
 
   const loadData = async (searchQuery?: string) => {
     if (menuPermissions.length > 0) setRefreshing(true)
     try {
+      console.log('Loading menu permissions with search:', searchQuery)
       const response = await AccessControlService.getMenuPermissions({ 
         search: searchQuery,
         include_inactive: true 
       })
+      console.log('Menu permissions response:', response)
       setMenuPermissions(response.data || [])
     } catch (error) {
       console.error('Failed to load menu permissions:', error)
@@ -114,6 +123,25 @@ export default function MenuPermissionsPage() {
 
   if (loading && menuPermissions.length === 0) {
     return <CommonLoading message="Loading menu permissions..." />
+  }
+
+  // Only allow super_admin to access this page
+  if (user?.userType !== 'SUPER_ADMIN') {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="text-center">
+          <Shield className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+          <p className="text-muted-foreground">Only Super Admin can access menu permission management.</p>
+          <Link href="/dashboard/access-control">
+            <Button className="mt-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Access Control
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (

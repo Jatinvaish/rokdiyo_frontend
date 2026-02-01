@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -16,24 +15,56 @@ import {
 } from '@/components/ui/dialog'
 import { AccessControlService } from '@/lib/services/access-control.service'
 import { toast } from 'sonner'
+import { Combobox } from '@/components/ui/custom/combobox'
+import {
+  Lock,
+  Key,
+  Shield,
+  Settings,
+  CheckCircle2,
+  Loader2,
+  Info,
+  Database,
+  Target,
+  Globe,
+  Users,
+  Building
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-const categories = [
-  'reservations',
-  'property', 
-  'finance',
-  'analytics',
-  'administration',
-  'guests',
-  'staff',
-  'inventory',
-  'food_beverage',
-  'housekeeping',
-  'maintenance',
-  'communications'
+const categoryOptions = [
+  { value: 'reservations', label: 'Reservations' },
+  { value: 'property', label: 'Property Management' },
+  { value: 'finance', label: 'Finance & Billing' },
+  { value: 'analytics', label: 'Analytics & Reports' },
+  { value: 'administration', label: 'Administration' },
+  { value: 'guests', label: 'Guest Management' },
+  { value: 'staff', label: 'Staff Management' },
+  { value: 'inventory', label: 'Inventory' },
+  { value: 'food_beverage', label: 'Food & Beverage' },
+  { value: 'housekeeping', label: 'Housekeeping' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'communications', label: 'Communications' }
 ]
 
-const actions = ['create', 'read', 'update', 'delete', 'export', 'manage', 'approve', 'reject']
-const scopes = ['all', 'own', 'team', 'branch', 'firm']
+const actionOptions = [
+  { value: 'create', label: 'Create' },
+  { value: 'read', label: 'Read/View' },
+  { value: 'update', label: 'Update/Edit' },
+  { value: 'delete', label: 'Delete' },
+  { value: 'export', label: 'Export' },
+  { value: 'manage', label: 'Manage' },
+  { value: 'approve', label: 'Approve' },
+  { value: 'reject', label: 'Reject' }
+]
+
+const scopeOptions = [
+  { value: 'all', label: 'All (Global)' },
+  { value: 'own', label: 'Own Only' },
+  { value: 'team', label: 'Team Only' },
+  { value: 'branch', label: 'Branch Only' },
+  { value: 'firm', label: 'Firm Only' }
+]
 
 interface CreatePermissionModalProps {
   open: boolean
@@ -87,7 +118,6 @@ export function CreatePermissionModal({ open, onClose, onSuccess }: CreatePermis
 
   const handleClose = () => {
     if (!loading) {
-      onClose()
       setFormData({
         permission_key: '',
         resource: '',
@@ -97,124 +127,155 @@ export function CreatePermissionModal({ open, onClose, onSuccess }: CreatePermis
         scope: 'all',
         fields: ''
       })
+      onClose()
+    }
+  }
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen && !loading) {
+      setFormData({
+        permission_key: '',
+        resource: '',
+        action: '',
+        description: '',
+        category: '',
+        scope: 'all',
+        fields: ''
+      })
+      onClose()
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Create New Permission</DialogTitle>
-          <DialogDescription>
-            Create a new system permission for access control.
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[440px] p-0 overflow-hidden rounded-xl border-none shadow-2xl">
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="resource">Resource</Label>
-                <Input
-                  id="resource"
-                  value={formData.resource}
-                  onChange={(e) => {
-                    setFormData(prev => ({ ...prev, resource: e.target.value }))
+          <div className="bg-primary/5 px-6 py-4 border-b border-primary/10">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                <Lock className="w-4 h-4 text-primary" />
+                Create New Permission
+              </DialogTitle>
+              <DialogDescription className="text-xs">Define granular access permissions for system resources and actions</DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="px-6 py-5 max-h-[500px] overflow-y-auto space-y-4">
+            {/* Permission Details Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-4 w-1 bg-primary rounded-full" />
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary/70">Permission Details</h4>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold uppercase tracking-tight opacity-70">Permission Key</Label>
+                <div className="relative">
+                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input 
+                    className="h-9 pl-7 font-mono" 
+                    placeholder="e.g., rooms.create" 
+                    value={formData.permission_key}
+                    onChange={(e) => setFormData(prev => ({ ...prev, permission_key: e.target.value }))}
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold uppercase tracking-tight opacity-70">Resource</Label>
+                <div className="relative">
+                  <Database className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input 
+                    className="h-9 pl-7" 
+                    placeholder="e.g., rooms, bookings, users" 
+                    value={formData.resource}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, resource: e.target.value }))
+                      generatePermissionKey()
+                    }}
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold uppercase tracking-tight opacity-70">Action</Label>
+                <Combobox
+                  options={actionOptions}
+                  value={formData.action}
+                  onChange={(val: string) => {
+                    setFormData(prev => ({ ...prev, action: val }))
                     generatePermissionKey()
                   }}
-                  placeholder="e.g., bookings, users"
-                  required
+                  placeholder="Select action"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="action">Action</Label>
-                <Select value={formData.action} onValueChange={(value) => {
-                  setFormData(prev => ({ ...prev, action: value }))
-                  generatePermissionKey()
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select action" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {actions.map((action) => (
-                      <SelectItem key={action} value={action}>
-                        {action.charAt(0).toUpperCase() + action.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="permission_key">Permission Key</Label>
-              <Input
-                id="permission_key"
-                value={formData.permission_key}
-                onChange={(e) => setFormData(prev => ({ ...prev, permission_key: e.target.value }))}
-                placeholder="e.g., bookings.create"
-                required
-              />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="category">Category</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category.charAt(0).toUpperCase() + category.slice(1).replace('_', ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Configuration Section */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-4 w-1 bg-primary rounded-full" />
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary/70">Configuration</h4>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="scope">Scope</Label>
-                <Select value={formData.scope} onValueChange={(value) => setFormData(prev => ({ ...prev, scope: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select scope" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {scopes.map((scope) => (
-                      <SelectItem key={scope} value={scope}>
-                        {scope.charAt(0).toUpperCase() + scope.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold uppercase tracking-tight opacity-70">Category</Label>
+                <Combobox
+                  options={categoryOptions}
+                  value={formData.category}
+                  onChange={(val: string) => setFormData(prev => ({ ...prev, category: val }))}
+                  placeholder="Select category"
+                />
               </div>
-            </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Describe what this permission allows..."
-              />
-            </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold uppercase tracking-tight opacity-70">Scope</Label>
+                <Combobox
+                  options={scopeOptions}
+                  value={formData.scope}
+                  onChange={(val: string) => setFormData(prev => ({ ...prev, scope: val }))}
+                  placeholder="Select scope"
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="fields">Fields (Optional)</Label>
-              <Input
-                id="fields"
-                value={formData.fields}
-                onChange={(e) => setFormData(prev => ({ ...prev, fields: e.target.value }))}
-                placeholder="e.g., id,name,email"
-              />
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold uppercase tracking-tight opacity-70">Description</Label>
+                <div className="relative">
+                  <Info className="absolute left-3 top-3 h-3 w-3 text-muted-foreground" />
+                  <Textarea
+                    className="pl-7 min-h-[60px] resize-none"
+                    placeholder="Describe what this permission allows users to do..."
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold uppercase tracking-tight opacity-70">Additional Fields</Label>
+                <div className="relative">
+                  <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input 
+                    className="h-9 pl-7" 
+                    placeholder="e.g., department, level" 
+                    value={formData.fields}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fields: e.target.value }))}
+                  />
+                </div>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
+
+          <DialogFooter className="px-6 py-4 bg-muted/30 border-t border-primary/5 gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={handleClose} disabled={loading} className="h-9 px-4 font-bold uppercase text-[10px] tracking-widest border-muted-foreground/20">
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Permission'}
+            <Button type="submit" size="sm" disabled={loading} className="flex-1 h-9 px-4 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20">
+              {loading ? (
+                <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> Creating Permission</>
+              ) : (
+                <><CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Create Permission</>
+              )}
             </Button>
           </DialogFooter>
         </form>

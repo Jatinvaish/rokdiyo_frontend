@@ -95,7 +95,7 @@ export class AccessControlService {
   // Role Permissions Management
   static async assignRolePermissions(data: {
     role_id: string;
-    permission_ids: string[];
+    permission_ids: number[];
   }) {
     return apiClient.post<ApiResponse<{ message: string; assigned_count: number }>>(API_ENDPOINTS.ACCESS_CONTROL.ROLE_PERMISSIONS.ASSIGN, data);
   }
@@ -131,7 +131,7 @@ export class AccessControlService {
 
   // User Permissions
   static async getEffectivePermissions() {
-    return apiClient.get<ApiResponse<Permission[]>>(API_ENDPOINTS.ACCESS_CONTROL.EFFECTIVE_PERMISSIONS);
+    return apiClient.post<ApiResponse<Permission[]>>(API_ENDPOINTS.ACCESS_CONTROL.EFFECTIVE_PERMISSIONS, {});
   }
 
   // User Menus
@@ -139,6 +139,36 @@ export class AccessControlService {
     return apiClient.post<ApiResponse<UserMenu[]>>('/access-control/get-user-menus', {
       user_id: userId
     });
+  }
+
+  // Subscription-based permissions
+  static async getSubscriptionPermissions(tenantId?: number): Promise<ApiResponse<Permission[]>> {
+    return apiClient.post<ApiResponse<Permission[]>>('/access-control/get-subscription-permissions', {
+      tenant_id: tenantId
+    });
+  }
+
+  // Get user permissions with subscription filtering
+  static async getUserPermissionsWithSubscription(userId: number): Promise<ApiResponse<Permission[]>> {
+    return apiClient.post<ApiResponse<Permission[]>>('/access-control/get-user-permissions-with-subscription', {
+      user_id: userId
+    });
+  }
+
+  // Get tenant-aware menus
+  static async getTenantAwareMenus(userId: number): Promise<ApiResponse<UserMenu[]>> {
+    return apiClient.post<ApiResponse<UserMenu[]>>('/access-control/get-tenant-aware-menus', {
+      user_id: userId
+    });
+  }
+
+  // Role-based permissions with subscription filtering
+  static async getRolePermissionsWithSubscription(params: {
+    role_id: string;
+    tenant_id?: number;
+    include_subscription_permissions?: boolean;
+  }) {
+    return apiClient.post<ApiResponse<(Permission & { granted: boolean; status: string })[]>>('/access-control/get-role-permissions-with-subscription', params);
   }
 
   // Access Checks
